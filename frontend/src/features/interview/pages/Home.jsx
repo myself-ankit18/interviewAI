@@ -222,7 +222,6 @@ const Home = () => {
                     <th>Job Title</th>
                     <th>AI Model</th>
                     <th>Date</th>
-                    <th>Status</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -240,11 +239,6 @@ const Home = () => {
                       </td>
                       <td className="table-date">
                         {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </td>
-                      <td>
-                        <span className={`table-badge ${report.matchScore >= 80 ? 'badge-high' : report.matchScore >= 60 ? 'badge-good' : 'badge-low'}`}>
-                          {report.matchScore >= 80 ? '🔥 Hot Match' : report.matchScore >= 60 ? '💪 Solid' : '📈 Room to Grow'}
-                        </span>
                       </td>
                       <td>
                         <span className="table-view-link">View →</span>
