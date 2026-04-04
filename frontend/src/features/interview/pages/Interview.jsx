@@ -1,0 +1,425 @@
+import React, { useState , useEffect} from 'react'
+import '../styles/interview.scss'
+import { useParams, useNavigate } from 'react-router'
+import { useInterview } from '../hooks/useInterview'
+import { useAuth } from '../../auth/hooks/useAuth'
+
+const Interview = () => {
+  const [activeTab, setActiveTab] = useState('technical')
+  const [projectIdeas, setProjectIdeas] = useState(null)
+  const [projectLoading, setProjectLoading] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { interviewId } = useParams()
+  const navigate = useNavigate()
+  const { report, loading, pdfLoading, error, getReportByID, getResumePDF, getProjectIdeasForReport } = useInterview()
+  const { handleLogout, user } = useAuth()
+
+    useEffect(() => {
+        if (interviewId) {
+            getReportByID(interviewId)
+        }
+    }, [interviewId])
+
+  const onLogout = async () => {
+    await handleLogout()
+    navigate('/login')
+  }
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId)
+    setIsMobileMenuOpen(false)
+  }
+
+  const handleGetProjectIdeas = async () => {
+    handleTabChange('projects')
+    if (projectIdeas) return // Already loaded
+    setProjectLoading(true)
+    const data = await getProjectIdeasForReport(interviewId)
+    setProjectIdeas(data)
+    setProjectLoading(false)
+  }
+
+  // Show loading state if report is not loaded yet
+  if (loading) {
+    return (
+      <div className="interview-page">
+        <div className="fullpage-loader">
+          <div className="loader-card">
+            <div className="loader-ring">
+              <svg viewBox="0 0 60 60" className="loader-ring-svg">
+                <circle cx="30" cy="30" r="24" fill="none" stroke="rgba(108,92,231,0.10)" strokeWidth="4" />
+                <circle cx="30" cy="30" r="24" fill="none" stroke="url(#loader-grad)" strokeWidth="4" strokeDasharray="90 151" strokeLinecap="round" className="loader-ring-spin" />
+                <defs>
+                  <linearGradient id="loader-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#6c5ce7" />
+                    <stop offset="50%" stopColor="#a29bfe" />
+                    <stop offset="100%" stopColor="#00cec9" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <span className="loader-icon">📊</span>
+            </div>
+            <h2>Analyzing Your Profile...</h2>
+            <p>Our AI is crunching numbers, reading your resume, and preparing a killer interview strategy. This usually takes 15-30 seconds. ☕</p>
+            <div className="loader-steps">
+              <div className="loader-step active"><span>📄</span> Reading Resume</div>
+              <div className="loader-step"><span>🔍</span> Matching Skills</div>
+              <div className="loader-step"><span>🧠</span> Generating Questions</div>
+              <div className="loader-step"><span>📋</span> Building Plan</div>
+            </div>
+            <div className="loader-dots">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="interview-page">
+        <div className="fullpage-loader">
+          <div className="loader-card">
+            <div className="error-message">
+              <h3>Oops! Something went wrong 😵</h3>
+              <p>{error}</p>
+              <button className="topbar-back" onClick={() => navigate('/')} style={{marginTop: '1rem'}}>← Back to Dashboard</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show empty state if report is null
+  if (!report) {
+    return (
+      <div className="interview-page">
+        <div className="fullpage-loader">
+          <div className="loader-card">
+            <div className="empty-state">
+              <h3>No Report Found 🤷</h3>
+              <p>Looks like the genie needs something to work with. Generate a report first!</p>
+              <button className="topbar-back" onClick={() => navigate('/')} style={{marginTop: '1rem'}}>← Back to Dashboard</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const renderContent = () => {
+    if (activeTab === 'technical') {
+      return (
+        <div className="content-section">
+          <h2>⚙️ Technical Questions</h2>
+          <p className="section-subtitle">The brain-busters they'll throw at you — with answers to make you look like a genius</p>
+          <div className="questions-list">
+            {report.technicalQuestions?.map((q, idx) => (
+              <div key={idx} className="question-card">
+                <div className="question-header">
+                  <span className="question-number">Q{idx + 1}</span>
+                  <h3>{q.question}</h3>
+                </div>
+                <div className="question-detail">
+                  <p className="intention"><strong>Why they ask this:</strong> {q.intention}</p>
+                  <p className="answer"><strong>Your power answer:</strong> {q.answer}</p>
+                </div>
+              </div>
+            )) || <p>No technical questions available</p>}
+          </div>
+        </div>
+      )
+    } else if (activeTab === 'behavioral') {
+      return (
+        <div className="content-section">
+          <h2>💬 Behavioral Questions</h2>
+          <p className="section-subtitle">The "tell me about a time when..." classics — we've got your stories ready</p>
+          <div className="questions-list">
+            {report.behavioralQuestions?.map((q, idx) => (
+              <div key={idx} className="question-card">
+                <div className="question-header">
+                  <span className="question-number">Q{idx + 1}</span>
+                  <h3>{q.question}</h3>
+                </div>
+                <div className="question-detail">
+                  <p className="intention"><strong>Why they ask this:</strong> {q.intention}</p>
+                  <p className="answer"><strong>Your power answer:</strong> {q.answer}</p>
+                </div>
+              </div>
+            )) || <p>No behavioral questions available</p>}
+          </div>
+        </div>
+      )
+    } else if (activeTab === 'plan') {
+      return (
+        <div className="content-section">
+          <h2>📋 Your Battle Plan</h2>
+          <p className="section-subtitle">Day-by-day preparation schedule — follow this and you'll be unstoppable</p>
+          <div className="plan-timeline">
+            {report.preparationPlan?.map((day, idx) => (
+              <div key={idx} className="day-card">
+                <div className="day-header">
+                  <span className="day-number">Day {day.day}</span>
+                  <h3>{day.focus}</h3>
+                </div>
+                <ul className="tasks-list">
+                  {day.tasks?.map((task, tidx) => (
+                    <li key={tidx}>{task}</li>
+                  )) || <li>No tasks available</li>}
+                </ul>
+              </div>
+            )) || <p>No preparation plan available</p>}
+          </div>
+        </div>
+      )
+    } else if (activeTab === 'projects') {
+      return (
+        <div className="content-section">
+          <h2>🚀 Project Ideas to Close Your Gaps</h2>
+          <p className="section-subtitle">Portfolio-ready projects that'll impress recruiters AND teach you the missing skills</p>
+          
+          {projectLoading ? (
+            <div className="projects-loading">
+              <div className="loader-ring" style={{width: '60px', height: '60px', margin: '2rem auto'}}>
+                <svg viewBox="0 0 60 60" className="loader-ring-svg">
+                  <circle cx="30" cy="30" r="24" fill="none" stroke="rgba(108,92,231,0.10)" strokeWidth="4" />
+                  <circle cx="30" cy="30" r="24" fill="none" stroke="url(#proj-grad)" strokeWidth="4" strokeDasharray="90 151" strokeLinecap="round" className="loader-ring-spin" />
+                  <defs>
+                    <linearGradient id="proj-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#6c5ce7" />
+                      <stop offset="100%" stopColor="#00cec9" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <span className="loader-icon">💡</span>
+              </div>
+              <p style={{textAlign: 'center', color: '#9b96c7'}}>Our AI is brainstorming project ideas based on your skill gaps...</p>
+            </div>
+          ) : projectIdeas?.projects ? (
+            <div className="projects-list">
+              {projectIdeas.projects.map((project, idx) => (
+                <div key={idx} className="project-card">
+                  <div className="project-card-header">
+                    <div className="project-number">{idx + 1}</div>
+                    <div className="project-meta">
+                      <h3>{project.title}</h3>
+                      <div className="project-badges">
+                        <span className={`difficulty-badge diff-${project.difficulty?.toLowerCase()}`}>{project.difficulty}</span>
+                        <span className="time-badge">⏱ {project.timeEstimate}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="project-description">{project.description}</p>
+                  
+                  <div className="project-section">
+                    <h4>🛠 Tech Stack</h4>
+                    <div className="project-tech-tags">
+                      {project.techStack?.map((tech, tidx) => (
+                        <span key={tidx} className="tech-tag">{tech}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="project-section">
+                    <h4>🎯 Skills You'll Learn</h4>
+                    <div className="project-tech-tags">
+                      {project.skillsCovered?.map((skill, sidx) => (
+                        <span key={sidx} className="skill-covered-tag">{skill}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="project-section">
+                    <h4>✨ Key Features to Build</h4>
+                    <ul className="project-features">
+                      {project.keyFeatures?.map((feat, fidx) => (
+                        <li key={fidx}>{feat}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="project-impress">
+                    <span className="impress-icon">💎</span>
+                    <p><strong>Why it impresses:</strong> {project.whyItImpresses}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <p>Could not generate project ideas. Please try again later.</p>
+            </div>
+          )}
+        </div>
+      )
+    }
+  }
+
+  const renderNavItems = (isMobile = false) => (
+    <nav className={`sidebar-nav ${isMobile ? 'mobile-nav' : 'desktop-nav'} ${isMobileMenuOpen && isMobile ? 'open' : ''}`}>
+      <button
+        className={`nav-item ${activeTab === 'technical' ? 'active' : ''}`}
+        onClick={() => handleTabChange('technical')}
+      >
+        <span className="nav-icon">⚙️</span>
+        Technical Q's
+      </button>
+      <button
+        className={`nav-item ${activeTab === 'behavioral' ? 'active' : ''}`}
+        onClick={() => handleTabChange('behavioral')}
+      >
+        <span className="nav-icon">💬</span>
+        Behavioral Q's
+      </button>
+      <button
+        className={`nav-item ${activeTab === 'plan' ? 'active' : ''}`}
+        onClick={() => handleTabChange('plan')}
+      >
+        <span className="nav-icon">📋</span>
+        Battle Plan
+      </button>
+      <button
+        className={`nav-item ${activeTab === 'projects' ? 'active' : ''}`}
+        onClick={handleGetProjectIdeas}
+      >
+        <span className="nav-icon">🚀</span>
+        Project Ideas
+      </button>
+      <button className="nav-item nav-item--download" onClick={()=>{
+        getResumePDF(interviewId);
+        setIsMobileMenuOpen(false);
+      }}>
+        <span className="nav-icon">📥</span>
+        Download Resume
+      </button>
+    </nav>
+  )
+
+  return (
+    <div className="interview-page">
+      {/* Top Navigation */}
+      <nav className="interview-topbar">
+        <button className="topbar-back" onClick={() => navigate('/')}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Back to Dashboard
+        </button>
+        <div className="topbar-actions">
+          {user && <span className="topbar-user">👤 {user.username || 'User'}</span>}
+          <button className="topbar-logout" onClick={onLogout}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Logout
+          </button>
+          <button 
+            className={`mobile-menu-btn ${isMobileMenuOpen ? 'open' : ''}`}
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle Menu"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile Menu Dropdown (Outside scrolling/transform contexts) */}
+      {renderNavItems(true)}
+
+      {/* PDF Generation Overlay */}
+      {pdfLoading && (
+        <div className="pdf-overlay">
+          <div className="pdf-overlay-card">
+            <div className="pdf-anim-ring">
+              <svg viewBox="0 0 50 50" className="pdf-ring-svg">
+                <circle cx="25" cy="25" r="20" fill="none" stroke="rgba(108,92,231,0.15)" strokeWidth="3" />
+                <circle cx="25" cy="25" r="20" fill="none" stroke="url(#pdf-grad)" strokeWidth="3" strokeDasharray="80 126" strokeLinecap="round" className="pdf-ring-spin" />
+                <defs>
+                  <linearGradient id="pdf-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#6c5ce7" />
+                    <stop offset="50%" stopColor="#a29bfe" />
+                    <stop offset="100%" stopColor="#00cec9" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <span className="pdf-anim-icon">📄</span>
+            </div>
+            <h3>Forging Your Resume...</h3>
+            <p>Our AI is crafting an industry-grade, ATS-optimized resume tailored to the job. Hang tight! 🔥</p>
+            <div className="pdf-progress-dots">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="interview-container">
+        {/* Sidebar */}
+        <div className="interview-sidebar">
+          <div className="sidebar-header">
+            <div className="sidebar-header-top">
+              <h2>🎯 Interview Report</h2>
+            </div>
+            <div className={`match-badge ${!isMobileMenuOpen ? 'always-show' : 'hide-on-mobile'}`}>
+              <div className="match-score-ring">
+                <svg viewBox="0 0 36 36" className="match-ring-svg">
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="rgba(108, 92, 231, 0.12)"
+                    strokeWidth="3"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke={report.matchScore >= 80 ? '#00cec9' : report.matchScore >= 60 ? '#feca57' : '#ff6b6b'}
+                    strokeWidth="3"
+                    strokeDasharray={`${report.matchScore || 0}, 100`}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span className="match-score-value">{report.matchScore || 0}%</span>
+              </div>
+              <p>Match Score</p>
+              <span className="match-verdict">
+                {(report.matchScore || 0) >= 80 ? "You're golden! 🌟" : (report.matchScore || 0) >= 60 ? 'Looking solid! 💪' : 'Let\'s level up! 📈'}
+              </span>
+            </div>
+          </div>
+
+          {renderNavItems(false)}
+        </div>
+
+        {/* Main Content Area */}
+        <div className="interview-main">
+          {/* Skill Gaps Header */}
+          <div className="skill-gaps-header">
+            <div className="skill-gaps-container">
+              <h3>🎯 Skill Gaps to Bridge</h3>
+              <p className="skill-gaps-subtitle">Focus on these areas to go from good to unstoppable</p>
+              <div className="skill-filters">
+                {report.skillGaps?.map((gap, idx) => (
+                  <button
+                    key={idx}
+                    className={`skill-tag severity-${gap.severity?.toLowerCase() || 'low'}`}
+                    title={`${gap.skill} - ${gap.severity || 'Unknown'} severity`}
+                  >
+                    {gap.skill}
+                  </button>
+                )) || <p>No skill gaps identified — you're already a legend! 🏆</p>}
+              </div>
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div className="interview-content">
+            {renderContent()}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default Interview
