@@ -4,12 +4,13 @@ const api = axios.create({
     withCredentials: true
 });
 
-export const generateInterviewReport = async ({resume, selfDescription, jobDescription}) => {
+export const generateInterviewReport = async ({resume, selfDescription, jobDescription, aiModel}) => {
     try {
         const formData = new FormData();
         formData.append("resume", resume);
         formData.append("selfDescription", selfDescription);
         formData.append("jobDescription", jobDescription);
+        if (aiModel) formData.append("aiModel", aiModel);
         const response = await api.post("/api/interview", formData, {
             headers: {
                 "Content-Type": "multipart/form-data"
@@ -42,8 +43,8 @@ export const getAllInterviewReports = async () => {
     }   
 };
 
-export const generateResumePDF = async ({interviewId}) => {
-    const response = await api.post(`/api/interview/resume/pdf/${interviewId}`, {}, {
+export const generateResumePDF = async ({interviewId, aiModel}) => {
+    const response = await api.post(`/api/interview/resume/pdf/${interviewId}`, { aiModel }, {
         responseType: 'blob'
     });
     return response.data;

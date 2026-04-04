@@ -442,6 +442,60 @@
   }
 }
 
+// ─── AI Model Selector ─────────────────────────────────────────────
+.model-select-wrapper {
+  position: relative;
+  
+  &::after {
+    content: '▼';
+    position: absolute;
+    right: 1.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+    font-size: 0.8rem;
+  }
+}
+
+.model-select {
+  width: 100%;
+  appearance: none;
+  padding: 0.85rem 1rem;
+  padding-right: 2.5rem;
+  border: 1.5px solid var(--rule-heavy);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--text-primary);
+  outline: none;
+  font-size: 0.9375rem;
+  font-family: 'Syne', sans-serif;
+  font-weight: 400;
+  transition: border-color 0.18s ease, background 0.18s ease;
+  box-sizing: border-box;
+
+  option {
+    background: var(--paper-warm);
+    color: var(--text-primary);
+  }
+
+  option:disabled {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  &:hover:not(:focus) {
+    border-color: var(--text-secondary);
+    background: #1e1c18;
+  }
+
+  &:focus {
+    border-color: var(--ink);
+    border-left: 3px solid var(--accent);
+    background: #131210;
+  }
+}
+
 // ─── Error Message ────────────────────────────────────────────────
 .form-error {
   display: flex;
@@ -658,6 +712,17 @@
   font-size: 0.75rem !important;
   font-family: 'DM Mono', monospace !important;
   letter-spacing: 0.04em;
+}
+
+.model-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  background: rgba(212, 130, 26, 0.15);
+  color: var(--accent);
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-family: 'DM Mono', monospace;
+  font-weight: 600;
 }
 
 .table-badge {

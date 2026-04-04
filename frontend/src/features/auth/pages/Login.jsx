@@ -83,7 +83,7 @@ const Login = () => {
           />
 
           <button type="submit" className="login-button">
-            Let Me In! 🚀
+            <span>Let Me In! 🚀</span>
           </button>
         </form>
         <p>

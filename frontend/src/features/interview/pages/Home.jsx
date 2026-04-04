@@ -3,6 +3,7 @@ import {useInterview} from '../hooks/useInterview'
 import {useAuth} from '../../auth/hooks/useAuth'
 import { useNavigate } from 'react-router'
 import '../styles/home.scss'
+import { groqModels } from '../../../data/models.js'
 
 const Home = () => {
     const {loading, error, generateReport, reports} = useInterview()
@@ -10,14 +11,26 @@ const Home = () => {
     const [jobDescription, setJobDescription] = useState('')
     const [selfDescription, setSelfDescription] = useState('')
     const [selectedFile, setSelectedFile] = useState(null)
+    const [selectedModel, setSelectedModel] = useState('meta-llama/llama-4-scout-17b-16e-instruct')
+    const [unavailableModels, setUnavailableModels] = useState([])
     const resumeInputRef = useRef(null)
     const navigate = useNavigate()
+
+    const availableModels = groqModels
+        .filter(m => m.max_tokens >= 8000)
+        .sort((a, b) => b.recommended - a.recommended);
 
     const handleGenerateReport = async (e) => {
         e.preventDefault()
         const resumeFile = resumeInputRef.current.files[0]
-        const data = await generateReport({resume: resumeFile, selfDescription, jobDescription})
-        navigate(`/interview/${data._id}`)
+        const data = await generateReport({resume: resumeFile, selfDescription, jobDescription, aiModel: selectedModel})
+        if (data && data._id) {
+            navigate(`/interview/${data._id}`)
+        } else {
+            if (!unavailableModels.includes(selectedModel)) {
+                setUnavailableModels(prev => [...prev, selectedModel])
+            }
+        }
     }
 
     const onLogout = async () => {
@@ -138,6 +151,36 @@ const Home = () => {
               />
             </div>
 
+            {/* AI Model Selection */}
+            <div className="form-group">
+              <label htmlFor="aiModel">
+                <span className="label-icon">🧠</span>
+                Choose AI Model (Agent)
+                <span className="label-required">*</span>
+              </label>
+              <div className="model-select-wrapper">
+                <select 
+                  id="aiModel" 
+                  value={selectedModel} 
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="model-select"
+                >
+                  {availableModels.map((model) => {
+                    const isUnavailable = unavailableModels.includes(model.id);
+                    return (
+                      <option 
+                        key={model.id} 
+                        value={model.id} 
+                        disabled={isUnavailable}
+                      >
+                        {model.recommended ? '⭐ ' : ''}{model.name} {model.developer ? `(${model.developer})` : ''} {isUnavailable ? '- Unavailable / Out of Credits' : ''}
+                      </option>
+                    )
+                  })}
+                </select>
+              </div>
+            </div>
+
             {/* Error Message */}
             {error && (
               <div className="form-error">
@@ -155,10 +198,10 @@ const Home = () => {
               {loading ? (
                 <span className="btn-loading">
                   <span className="btn-spinner"></span>
-                  Genie is working its magic...
+                  <span>Genie is working its magic...</span>
                 </span>
               ) : (
-                <>✨ Generate Interview Report</>
+                <span>✨ Generate Interview Report</span>
               )}
             </button>
           </form>
@@ -177,6 +220,7 @@ const Home = () => {
                   <tr>
                     <th>Score</th>
                     <th>Job Title</th>
+                    <th>AI Model</th>
                     <th>Date</th>
                     <th>Status</th>
                     <th></th>
@@ -191,6 +235,9 @@ const Home = () => {
                         </span>
                       </td>
                       <td className="table-title">{report.title}</td>
+                      <td className="table-model">
+                        <span className="model-badge">{(report.aiModel || 'meta-llama/llama-4-scout-17b-16e-instruct').split('/').pop()}</span>
+                      </td>
                       <td className="table-date">
                         {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </td>

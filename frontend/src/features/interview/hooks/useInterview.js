@@ -10,13 +10,13 @@ export const useInterview = () => {
         throw new Error("useInterview must be used within an InterviewProvider");
     }
     const {loading, setLoading, pdfLoading, setPdfLoading, error, setError, report, setReport, reports, setReports} = context;
-    const generateReport = async ({resume, selfDescription, jobDescription}) => {
+    const generateReport = async ({resume, selfDescription, jobDescription, aiModel}) => {
         setLoading(true)
         setError('')
         setReport(null)
         let data = null
         try {
-            data = await generateInterviewReport({resume, selfDescription, jobDescription})
+            data = await generateInterviewReport({resume, selfDescription, jobDescription, aiModel})
             setReport(data.data)
         } catch (error) {
             setError('Failed to generate interview report. Please try again.')
@@ -58,12 +58,12 @@ export const useInterview = () => {
         }
         return data.data
     }
-    const getResumePDF = async (interviewId) => {
+    const getResumePDF = async (interviewId, aiModel) => {
         setError('')
         setPdfLoading(true)
         let data = null
         try {
-                data = await generateResumePDF({interviewId})
+                data = await generateResumePDF({interviewId, aiModel})
                 const url = window.URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
                 const link = document.createElement('a')
                 link.href = url
@@ -99,6 +99,6 @@ export const useInterview = () => {
         }
     }, [interviewId])
 
-    return {loading, pdfLoading, error, report, reports, generateReport, getReportByID, getAllReports, getResumePDF, getProjectIdeasForReport}
+    return {loading, pdfLoading, error, setError, report, reports, generateReport, getReportByID, getAllReports, getResumePDF, getProjectIdeasForReport}
 }
 

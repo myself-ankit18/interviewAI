@@ -3,6 +3,7 @@ import '../styles/interview.scss'
 import { useParams, useNavigate } from 'react-router'
 import { useInterview } from '../hooks/useInterview'
 import { useAuth } from '../../auth/hooks/useAuth'
+import { groqModels } from '../../../data/models.js'
 
 const Interview = () => {
   const [activeTab, setActiveTab] = useState('technical')
@@ -11,8 +12,16 @@ const Interview = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { interviewId } = useParams()
   const navigate = useNavigate()
-  const { report, loading, pdfLoading, error, getReportByID, getResumePDF, getProjectIdeasForReport } = useInterview()
+  const { report, loading, pdfLoading, error, setError, getReportByID, getResumePDF, getProjectIdeasForReport } = useInterview()
   const { handleLogout, user } = useAuth()
+
+  const [showDownloadModal, setShowDownloadModal] = useState(false)
+  const [selectedModel, setSelectedModel] = useState('meta-llama/llama-4-scout-17b-16e-instruct')
+  const [unavailableModels, setUnavailableModels] = useState([])
+  
+  const availableModels = groqModels
+      .filter(m => m.max_tokens >= 8000)
+      .sort((a, b) => b.recommended - a.recommended);
 
     useEffect(() => {
         if (interviewId) {
@@ -37,6 +46,17 @@ const Interview = () => {
     const data = await getProjectIdeasForReport(interviewId)
     setProjectIdeas(data)
     setProjectLoading(false)
+  }
+
+  const handleDownloadSubmit = async () => {
+      const data = await getResumePDF(interviewId, selectedModel);
+      if (!data) {
+          if (!unavailableModels.includes(selectedModel)) {
+              setUnavailableModels(prev => [...prev, selectedModel])
+          }
+      } else {
+          setShowDownloadModal(false);
+      }
   }
 
   // Show loading state if report is not loaded yet
@@ -81,11 +101,29 @@ const Interview = () => {
     return (
       <div className="interview-page">
         <div className="fullpage-loader">
-          <div className="loader-card">
+          <div className="loader-card" style={{position: 'relative'}}>
+            <button 
+              onClick={() => setError('')}
+              style={{
+                position: 'absolute', 
+                top: '1rem', 
+                right: '1.25rem', 
+                background: 'transparent', 
+                border: 'none', 
+                color: '#a8a090', 
+                fontSize: '1.5rem', 
+                cursor: 'pointer',
+                transition: 'color 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.target.style.color = '#fff'}
+              onMouseLeave={(e) => e.target.style.color = '#a8a090'}
+              aria-label="Close error"
+            >
+              &#x2715;
+            </button>
             <div className="error-message">
               <h3>Oops! Something went wrong 😵</h3>
               <p>{error}</p>
-              <button className="topbar-back" onClick={() => navigate('/')} style={{marginTop: '1rem'}}>← Back to Dashboard</button>
             </div>
           </div>
         </div>
@@ -208,7 +246,7 @@ const Interview = () => {
                       <h3>{project.title}</h3>
                       <div className="project-badges">
                         <span className={`difficulty-badge diff-${project.difficulty?.toLowerCase()}`}>{project.difficulty}</span>
-                        <span className="time-badge">⏱ {project.timeEstimate}</span>
+                        <span className="time-badge">⏱ {project.estimatedTime}</span>
                       </div>
                     </div>
                   </div>
@@ -289,7 +327,7 @@ const Interview = () => {
         Project Ideas
       </button>
       <button className="nav-item nav-item--download" onClick={()=>{
-        getResumePDF(interviewId);
+        setShowDownloadModal(true);
         setIsMobileMenuOpen(false);
       }}>
         <span className="nav-icon">📥</span>
@@ -349,6 +387,65 @@ const Interview = () => {
             <p>Our AI is crafting an industry-grade, ATS-optimized resume tailored to the job. Hang tight! 🔥</p>
             <div className="pdf-progress-dots">
               <span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Model Selection Modal for Download */}
+      {showDownloadModal && (
+        <div className="pdf-overlay" style={{ zIndex: 1000}}>
+          <div className="pdf-overlay-card model-select-modal" style={{textAlign: "left"}}>
+            <h3 style={{marginBottom: "0.5rem", fontSize: "1.5rem", background: "linear-gradient(45deg, #00cec9, #6c5ce7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent"}}>Download Enhanced Resume</h3>
+            <p style={{marginBottom: "1.5rem", color: "#a29bfe", fontSize: "0.95rem"}}>Choose an AI model to professionally rewrite and enhance your resume text before exporting to PDF.</p>
+            
+            <div className="form-group">
+              <label htmlFor="aiModelDownload" style={{display: "block", marginBottom: "0.5rem", fontWeight: "600", color: "#eef2f3"}}>
+                <span className="label-icon" style={{marginRight: "8px"}}>🧠</span>
+                Select AI Agent
+              </label>
+              <div className="model-select-wrapper" style={{position: "relative"}}>
+                <select 
+                  id="aiModelDownload" 
+                  value={selectedModel} 
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="model-select"
+                  style={{width: "100%", padding: "12px", borderRadius: "12px", background: "rgba(10, 11, 26, 0.6)", border: "1px solid rgba(108, 92, 231, 0.3)", color: "white", outline: "none"}}
+                >
+                  {availableModels.map((model) => {
+                    const isUnavailable = unavailableModels.includes(model.id);
+                    return (
+                      <option 
+                        key={model.id} 
+                        value={model.id} 
+                        disabled={isUnavailable}
+                      >
+                        {model.recommended ? '⭐ ' : ''}{model.name} {model.developer ? `(${model.developer})` : ''} {isUnavailable ? '- Unavailable / Out of Credits' : ''}
+                      </option>
+                    )
+                  })}
+                </select>
+              </div>
+            </div>
+            
+            <div style={{display: "flex", gap: "1rem", marginTop: "2rem"}}>
+              <button 
+                onClick={() => setShowDownloadModal(false)}
+                style={{flex: 1, padding: "12px", borderRadius: "10px", background: "transparent", border: "1px solid rgba(255, 255, 255, 0.1)", color: "white", cursor: "pointer"}}
+              >
+                Cancel
+              </button>
+              <button 
+                 onClick={handleDownloadSubmit}
+                 disabled={pdfLoading}
+                 style={{flex: 1, padding: "12px", borderRadius: "10px", background: "linear-gradient(45deg, #6c5ce7, #00cec9)", border: "none", color: "white", fontWeight: "bold", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px"}}
+              >
+                {pdfLoading ? (
+                  <>Building...</>
+                ) : (
+                  <>📥 Download PDF</>
+                )}
+              </button>
             </div>
           </div>
         </div>

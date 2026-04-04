@@ -58,7 +58,7 @@ const Register = () => {
           />
 
           <button type="submit" className="login-button">
-            Create My Account ✨
+            <span>Create My Account ✨</span>
           </button>
         </form>
         <p>Already one of us? <Link to="/login">Sign in</Link> — welcome back 🤝</p>

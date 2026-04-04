@@ -5,11 +5,12 @@ async function generateInterviewReportController(req, res) {
     const resumeFile = req.file
     const resumeData = await (new pdfParse.PDFParse(Uint8Array.from(resumeFile.buffer))).getText();
     const resumeContent = resumeData.text
-    const {selfDescription, jobDescription} = req.body
+    const {selfDescription, jobDescription, aiModel} = req.body
     const interviewReportbyAI = await generateInterviewReport({
         resume: resumeContent,
         selfDescription,
-        jobDescription
+        jobDescription,
+        aiModel
     });
 
     // Generate a title from the job description (first 50 characters)
@@ -23,6 +24,7 @@ async function generateInterviewReportController(req, res) {
         selfDescription,
         jobDescription,
         title,
+        aiModel: aiModel || 'meta-llama/llama-4-scout-17b-16e-instruct',
         ...JSON.parse(interviewReportbyAI)
     })
     return res.status(201).json({
@@ -61,6 +63,7 @@ async function getAllInterviewReportsController(req, res) {
 // controller for generating resume PDF using AI
 async function generateResumePDFController(req, res) {
     const {interviewId} = req.params;   
+    const { aiModel } = req.body;
     const interviewReport = await interviewReportModel.findOne({ _id: interviewId, user: req.user.id });
 
     if (!interviewReport) {
@@ -73,7 +76,8 @@ async function generateResumePDFController(req, res) {
     const pdf = await generateResumePDF({
         resume: interviewReport.resume,
         selfDescription: interviewReport.selfDescription,
-        jobDescription: interviewReport.jobDescription
+        jobDescription: interviewReport.jobDescription,
+        aiModel
     });
 
     res.setHeader('Content-Type', 'application/pdf');

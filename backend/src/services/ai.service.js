@@ -77,7 +77,7 @@ const interviewReportSchema = z.object({
     title: z.string().describe("The title of the job position that the candidate is applying for, which can be used to tailor the interview report and preparation plan to the specific role.")
 })
 
-async function generateInterviewReport({resume, selfDescription, jobDescription}){
+async function generateInterviewReport({resume, selfDescription, jobDescription, aiModel}){
     const jsonSchema = zodToJsonSchema(interviewReportSchema);
 
     const prompt = `You are an elite technical interview coach who has prepared 500+ candidates for roles at Google, Amazon, Meta, Microsoft, and top startups. Analyze this candidate thoroughly and produce a comprehensive interview preparation report.
@@ -203,7 +203,7 @@ CRITICAL REMINDERS:
 - All content must be tailored to THIS specific candidate and THIS specific job`
 
     const response = await ai.chat.completions.create({
-        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        model: aiModel || "meta-llama/llama-4-scout-17b-16e-instruct",
         messages: [{
             role: "system",
             content: "You are an elite interview preparation coach. You produce thorough, honest, and actionable interview reports. Your match scores are always precise and well-calibrated — you never default to generic numbers like 85 or 80. Your questions are at real interview difficulty level. Your answers are comprehensive and production-ready. Respond with valid JSON only — no markdown formatting."
@@ -220,7 +220,7 @@ CRITICAL REMINDERS:
     return response.choices[0].message.content;
 }
 
-async function generateResumePDF({resume, selfDescription, jobDescription}){
+async function generateResumePDF({resume, selfDescription, jobDescription, aiModel}){
     const resumePdfSchema = z.object({
         html: z.string().describe("Complete HTML resume document with inline CSS styling, ready for PDF conversion.")
     });
@@ -302,7 +302,7 @@ Respond with a JSON object with a single 'html' field containing the complete HT
 Schema: ${JSON.stringify(zodToJsonSchema(resumePdfSchema), null, 2)}`;
 
     const response = await ai.chat.completions.create({
-        model: "moonshotai/kimi-k2-instruct-0905",
+        model: aiModel || "moonshotai/kimi-k2-instruct-0905",
         messages: [{
             role: "system",
             content: "You are an expert resume writer. You produce ATS-optimized, professionally written resumes that get candidates interviews at top companies. Always output valid JSON with an 'html' field."
@@ -337,7 +337,7 @@ async function generateProjectIdeas({skillGaps, jobDescription}){
             techStack: z.array(z.string()).describe("List of technologies used in this project"),
             skillsCovered: z.array(z.string()).describe("Which skill gaps this project addresses"),
             difficulty: z.enum(['Beginner', 'Intermediate', 'Advanced']).describe("Project difficulty level"),
-            timeEstimate: z.string().describe("Estimated time to complete, e.g. '1-2 weeks'"),
+            estimatedTime: z.string().describe("Estimated time to complete, e.g. '1-2 weeks'"),
             keyFeatures: z.array(z.string()).describe("3-5 key features to implement"),
             whyItImpresses: z.string().describe("Why this project would impress a recruiter or hiring manager")
         })).describe("2-3 portfolio-ready side project ideas")
@@ -362,6 +362,24 @@ ${jobDescription}
 - Each project should be something the candidate can demo in an interview
 - Include key features that would showcase the skills being learned
 
+Respond with valid JSON matching this schema exactly. CRITICAL: NO empty arrays and NO missing fields. Do not omit 'title', 'difficulty', 'estimatedTime', 'skillsCovered', 'keyFeatures', or 'whyItImpresses'.
+
+EXAMPLE OUTPUT:
+{
+  "projects": [
+    {
+      "title": "Full-Stack Weather Dashboard",
+      "description": "A scalable weather dashboard with real-time updates.",
+      "difficulty": "Intermediate",
+      "estimatedTime": "1-2 weeks",
+      "techStack": ["React", "Node.js", "Redis"],
+      "skillsCovered": ["System Design", "Caching"],
+      "keyFeatures": ["Real-time data streaming", "Redis caching layer", "Responsive UI"],
+      "whyItImpresses": "Demonstrates ability to handle real-time data and implement optimized caching strategies."
+    }
+  ]
+}
+
 Respond with valid JSON matching this schema:
 ${JSON.stringify(zodToJsonSchema(projectIdeasSchema), null, 2)}`;
 
@@ -369,7 +387,7 @@ ${JSON.stringify(zodToJsonSchema(projectIdeasSchema), null, 2)}`;
         model: "meta-llama/llama-4-scout-17b-16e-instruct",
         messages: [{
             role: "system",
-            content: "You are a senior engineering hiring manager. You suggest impressive, practical portfolio projects that help candidates close their skill gaps. Respond with valid JSON only."
+            content: "You are a senior engineering hiring manager. You suggest impressive, practical portfolio projects that help candidates close their skill gaps. Respond with valid JSON only. NEVER omit any fields from the requested schema."
         }, {
             role: "user",
             content: prompt

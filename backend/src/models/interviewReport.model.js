@@ -105,6 +105,10 @@ const interviewReportSchema = new mongoose.Schema({
     title: {
         type: String,
         required: [true, 'Title is required']
+    },
+    aiModel: {
+        type: String,
+        default: 'meta-llama/llama-4-scout-17b-16e-instruct'
     }
 
 }, {
