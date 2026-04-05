@@ -72,7 +72,7 @@ async function sendRegistrationOtpController(req, res) {
 
     // Send the PLAIN OTP to the user's inbox
     try {
-        await sendOtpEmail(email, otp);
+        await sendOtpEmail(email, otp, "registration");  // "registration" → email says "Verify Your Email"
     } catch (error) {
         console.error("Failed to send registration OTP email:", error);
         return res.status(500).json({
