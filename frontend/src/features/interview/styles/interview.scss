@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Syne:wght@400;500;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Outfit:wght@400;500;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap');
 
 // ─── Interview Page Layout ────────────────────────────────────────
 .interview-page {
@@ -9,7 +9,7 @@
   min-height: 100vh;
   background: linear-gradient(160deg, #0f0e0c 0%, #171613 40%, #1a1814 100%);
   color: #e8e2d4;
-  font-family: "Syne", sans-serif;
+  font-family: "Outfit", sans-serif;
 
   &::before {
     content: "";
@@ -353,7 +353,7 @@
   border-radius: 0.875rem;
   background: transparent;
   color: #a8a090;
-  font-family: "Syne", sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.78rem;
   font-weight: 500;
   cursor: pointer;
@@ -625,7 +625,7 @@
     font-weight: 600;
     color: #e8e2d4;
     line-height: 1.55;
-    font-family: "Syne", sans-serif;
+    font-family: "Outfit", sans-serif;
   }
 }
 
