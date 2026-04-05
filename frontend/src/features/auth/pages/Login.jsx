@@ -55,9 +55,9 @@ const Login = () => {
       <main className="login-page">
         <section className="login-card">
         <header className="login-header">
-          <h1>Welcome Back, Champ 🏆</h1>
+          <h1>Welcome to the Grid ⚡</h1>
           <p className="login-subtitle">
-            Your next interview is shaking in its boots. Let's prep and slay! 🔥
+            The algorithm is primed. Time to secure your next big offer. 🎯
           </p>
         </header>
 
@@ -74,7 +74,7 @@ const Login = () => {
             id="login-email"
             name="email"
             type="email"
-            placeholder="genius@example.com"
+            placeholder="visionary@future.io"
             onChange={(e) => setEmail(e.target.value)}
             required
           />
@@ -84,17 +84,17 @@ const Login = () => {
             id="login-password"
             name="password"
             type="password"
-            placeholder="Shh… it's a secret 🤫"
+            placeholder="Your access key 🔑"
             onChange={(e) => setPassword(e.target.value)}
             required
           />
 
           <button type="submit" className="login-button">
-            <span>Let Me In! 🚀</span>
+            <span>Initialize Session 🚀</span>
           </button>
         </form>
         <p>
-          New here? <Link to="/register">Create an account</Link> — it's free, we promise 😉
+          Need clearance? <Link to="/register">Forge an account</Link> — the future awaits 🌌
         </p>
         </section>
       </main>

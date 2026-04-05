@@ -65,12 +65,12 @@ const Home = () => {
       {validationModal.open && (
         <div className="validation-modal-overlay">
           <div className="validation-modal">
-            <div className="modal-icon">🚫</div>
-            <h3>Hold Up, Boss!</h3>
-            <p>Our AI gatekeeper rejected these inputs:</p>
+            <div className="modal-icon">⚠️</div>
+            <h3>Signal Interrupted</h3>
+            <p>Our AI detected some anomalies in your payload:</p>
             <div className="modal-reason">{validationModal.reason}</div>
             <button className="modal-close-btn" onClick={() => setValidationModal({ open: false, reason: '' })}>
-              Got it, let me fix it
+              Recalibrate
             </button>
           </div>
         </div>
@@ -80,12 +80,12 @@ const Home = () => {
       {modelErrorModal.open && (
         <div className="validation-modal-overlay">
           <div className="validation-modal model-error-variant">
-            <div className="modal-icon">🌩️</div>
-            <h3>Model Not Available</h3>
-            <p>Static on the line! This model is temporarily unreachable (likely rate-limited or over-capacity).</p>
-            <div className="modal-reason secondary">Try another model from the dropdown or wait a few minutes.</div>
+            <div className="modal-icon">🧠</div>
+            <h3>Neural Net Overloaded</h3>
+            <p>Our agents are currently processing at maximum capacity. The selected model is taking a breather.</p>
+            <div className="modal-reason secondary">Switch frequencies to another model or wait a few minutes.</div>
             <button className="modal-close-btn" onClick={() => setModelErrorModal({ open: false })}>
-              Roger that, I'll switch
+              Switch frequencies
             </button>
           </div>
         </div>
@@ -103,7 +103,7 @@ const Home = () => {
           <span className="brand-text">InterviewGenie</span>
         </div>
         <div className="topbar-right">
-          {user && <span className="topbar-greeting">Hey, {user.username || 'Legend'} 👋</span>}
+          {user && <span className="topbar-greeting">Ready, {user.username || 'Operative'}? ⚡</span>}
           <button className="topbar-logout" onClick={onLogout}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Logout
@@ -114,22 +114,21 @@ const Home = () => {
       <div className="home-content">
         {/* Hero */}
         <div className="home-hero">
-          <div className="hero-badge">🧞‍♂️ AI-Powered Interview Prep</div>
+          <div className="hero-badge">Next-Gen Interview Intelligence ⚡</div>
           <h1 className="hero-title">
-            Stop Stressing.<br/>
-            <span className="hero-gradient">Start Slaying.</span>
+            Outsmart the System.<br/>
+            <span className="hero-gradient">Secure the Offer.</span>
           </h1>
           <p className="hero-subtitle">
-            Upload your resume, paste the job description, and let our AI genie cook up the perfect interview battle plan. 
-            <em> No lamp rubbing required.</em> 🪄
+            Feed the algorithm your resume and the target role. We'll synthesize a tactical briefing built to win. 🎯
           </p>
         </div>
 
         {/* Form Card */}
         <div className="home-form-card">
           <div className="form-card-header">
-            <h2>🎯 Generate Your Report</h2>
-            <p>Fill in the details below and watch the magic happen</p>
+            <h2>Initialize Strategy Session 🔬</h2>
+            <p>Configure your parameters to generate a custom tactical report</p>
           </div>
 
           <form className="home-form" onSubmit={handleGenerateReport}>
@@ -144,7 +143,7 @@ const Home = () => {
                 id="jobDescription"
                 name="jobDescription"
                 rows={5}
-                placeholder="Paste the job description here... We promise not to judge the requirements 😅"
+                placeholder="Drop the job spec here. We'll decode the corporate jargon. 🕵️"
                 onChange={(e) => setJobDescription(e.target.value)}
                 required
               />
@@ -194,7 +193,7 @@ const Home = () => {
                 id="selfDescription"
                 name="selfDescription"
                 rows={4}
-                placeholder="Brag a little! Your experience, skills, career goals... (Optional) 👂"
+                placeholder="Any secret weapons? Add context to supercharge the AI's accuracy... (Optional) 🚀"
                 onChange={(e) => setSelfDescription(e.target.value)}
               />
             </div>
@@ -242,10 +241,10 @@ const Home = () => {
               {loading ? (
                 <span className="btn-loading">
                   <span className="btn-spinner"></span>
-                  <span>Genie is working its magic...</span>
+                  <span>Synthesizing tactical brief...</span>
                 </span>
               ) : (
-                <span>✨ Generate Interview Report</span>
+                <span>Generate Strategy ⚡</span>
               )}
             </button>
           </form>
@@ -256,8 +255,8 @@ const Home = () => {
           <div className="home-reports">
             <div className="reports-header">
               <div className="reports-header-text">
-                <h2>📊 Your Battle History</h2>
-                <p>Previous interview reports — because legends keep track of their wins</p>
+                <h2>Mission Logs 🗄️</h2>
+                <p>Archive of your past tactical briefings and strategies</p>
               </div>
               <div className="reports-controls">
                 <div className="search-wrapper">

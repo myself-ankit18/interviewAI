@@ -79,8 +79,8 @@ const Interview = () => {
               </svg>
               <span className="loader-icon">📊</span>
             </div>
-            <h2>Analyzing Your Profile...</h2>
-            <p>Our AI is crunching numbers, reading your resume, and preparing a killer interview strategy. This usually takes 15-30 seconds. ☕</p>
+            <h2>Decoding Profile Geometry...</h2>
+            <p>Our neural engines are mapping your skills against the target requirements. Expect intel in 15-30 seconds. ⏳</p>
             <div className="loader-steps">
               <div className="loader-step active"><span>📄</span> Reading Resume</div>
               <div className="loader-step"><span>🔍</span> Matching Skills</div>
@@ -138,8 +138,8 @@ const Interview = () => {
         <div className="fullpage-loader">
           <div className="loader-card">
             <div className="empty-state">
-              <h3>No Report Found 🤷</h3>
-              <p>Looks like the genie needs something to work with. Generate a report first!</p>
+              <h3>Data Vault Empty 📭</h3>
+              <p>No intel found. Initiate a new strategy session to populate your dashboard.</p>
               <button className="topbar-back" onClick={() => navigate('/')} style={{marginTop: '1rem'}}>← Back to Dashboard</button>
             </div>
           </div>
@@ -152,8 +152,8 @@ const Interview = () => {
     if (activeTab === 'technical') {
       return (
         <div className="content-section">
-          <h2>⚙️ Technical Questions</h2>
-          <p className="section-subtitle">The brain-busters they'll throw at you — with answers to make you look like a genius</p>
+          <h2>⚙️ Technical Interrogation</h2>
+          <p className="section-subtitle">High-probability technical challenges, complete with optimized countermeasures.</p>
           <div className="questions-list">
             {report.technicalQuestions?.map((q, idx) => (
               <div key={idx} className="question-card">
@@ -173,8 +173,8 @@ const Interview = () => {
     } else if (activeTab === 'behavioral') {
       return (
         <div className="content-section">
-          <h2>💬 Behavioral Questions</h2>
-          <p className="section-subtitle">The "tell me about a time when..." classics — we've got your stories ready</p>
+          <h2>💬 Behavioral Analytics</h2>
+          <p className="section-subtitle">Navigating the psychological minefield with structural, high-impact narratives.</p>
           <div className="questions-list">
             {report.behavioralQuestions?.map((q, idx) => (
               <div key={idx} className="question-card">
@@ -194,8 +194,8 @@ const Interview = () => {
     } else if (activeTab === 'plan') {
       return (
         <div className="content-section">
-          <h2>📋 Your Battle Plan</h2>
-          <p className="section-subtitle">Day-by-day preparation schedule — follow this and you'll be unstoppable</p>
+          <h2>📋 Tactical Execution Timeline</h2>
+          <p className="section-subtitle">Your calibrated day-by-day roadmap to peak interview readiness.</p>
           <div className="plan-timeline">
             {report.preparationPlan?.map((day, idx) => (
               <div key={idx} className="day-card">
@@ -294,8 +294,8 @@ const Interview = () => {
     } else if (activeTab === 'projects') {
       return (
         <div className="content-section">
-          <h2>🚀 Project Ideas to Close Your Gaps</h2>
-          <p className="section-subtitle">Portfolio-ready projects that'll impress recruiters AND teach you the missing skills</p>
+          <h2>🚀 Strategic Portfolio Expansion</h2>
+          <p className="section-subtitle">Targeted builds designed to neutralize your identified skill vulnerabilities.</p>
           
           {projectLoading ? (
             <div className="projects-loading">
@@ -473,8 +473,8 @@ const Interview = () => {
               </svg>
               <span className="pdf-anim-icon">📄</span>
             </div>
-            <h3>Generating Document...</h3>
-            <p>Our AI is preparing your professional PDF. Hang tight! 🔥</p>
+            <h3>Compiling Executive Dossier...</h3>
+            <p>Forging your strategy into a comprehensive tactical brief. ⚡</p>
             <div className="pdf-progress-dots">
               <span></span><span></span><span></span>
             </div>
@@ -573,7 +573,7 @@ const Interview = () => {
               </div>
               <p>Match Score</p>
               <span className="match-verdict">
-                {(report.matchScore || 0) >= 80 ? "You're golden! 🌟" : (report.matchScore || 0) >= 60 ? 'Looking solid! 💪' : 'Let\'s level up! 📈'}
+                {(report.matchScore || 0) >= 80 ? "Elite Alignment 💎" : (report.matchScore || 0) >= 60 ? 'Tactical Advantage 🛡️' : 'Calibration Required 🔧'}
               </span>
             </div>
           </div>
@@ -586,8 +586,8 @@ const Interview = () => {
           {/* Skill Gaps Header */}
           <div className="skill-gaps-header">
             <div className="skill-gaps-container">
-              <h3>🎯 Skill Gaps to Bridge</h3>
-              <p className="skill-gaps-subtitle">Focus on these areas to go from good to unstoppable</p>
+              <h3>🎯 Vulnerability Assessment</h3>
+              <p className="skill-gaps-subtitle">Critical capability gaps to bridge before deployment.</p>
               <div className="skill-filters">
                 {report.skillGaps?.map((gap, idx) => (
                   <button
@@ -597,7 +597,7 @@ const Interview = () => {
                   >
                     {gap.skill}
                   </button>
-                )) || <p>No skill gaps identified — you're already a legend! 🏆</p>}
+                )) || <p>Zero vulnerabilities detected. You are a tactical anomaly. 🦄</p>}
               </div>
             </div>
           </div>

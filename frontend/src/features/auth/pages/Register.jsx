@@ -31,8 +31,8 @@ const Register = () => {
       <main className="login-page">
       <section className="login-card">
         <header className="login-header">
-          <h1>Join the Legends 🦸</h1>
-          <p className="login-subtitle">One account away from interview domination. No capes required. 💪</p>
+          <h1>Forge Your Advantage ⚒️</h1>
+          <p className="login-subtitle">Join an elite squad of candidates using AI to rewrite the rules of hiring. 🧠</p>
         </header>
 
         <form className="login-form" onSubmit={handleSubmit}>
@@ -41,7 +41,7 @@ const Register = () => {
             id="register-email"
             name="email"
             type="email"
-            placeholder="rockstar@example.com"
+            placeholder="pioneer@future.io"
             required
             onChange={(e)=>setEmail(e.target.value)}
           />
@@ -51,7 +51,7 @@ const Register = () => {
             id="register-username"
             name="username"
             type="text"
-            placeholder="TheInterviewSlayer"
+            placeholder="CodeBreaker99"
             onChange={(e)=>setUsername(e.target.value)}
             required
           />
@@ -61,16 +61,16 @@ const Register = () => {
             id="register-password"
             name="password"
             type="password"
-            placeholder="Make it uncrackable 🔐"
+            placeholder="FortKnox material 🛡️"
             onChange={(e)=>setPassword(e.target.value)}
             required
           />
 
           <button type="submit" className="login-button">
-            <span>Create My Account ✨</span>
+            <span>Establish Uplink 🛸</span>
           </button>
         </form>
-        <p>Already one of us? <Link to="/login">Sign in</Link> — welcome back 🤝</p>
+        <p>Already have clearance? <Link to="/login">Access portal</Link> — welcome back 🤝</p>
       </section>
       </main>
     </>
