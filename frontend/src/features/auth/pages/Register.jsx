@@ -19,7 +19,16 @@ const Register = () => {
         return <div>Loading...</div>
     }
   return (
-    <main className="login-page">
+    <>
+      <nav className="auth-nav">
+        <div className="auth-nav-logo">
+          <span className="nav-icon">🪄</span>
+          <span className="nav-brand">InterviewGenie</span>
+        </div>
+        <div className="auth-nav-tagline">AI Interview Intelligence</div>
+      </nav>
+
+      <main className="login-page">
       <section className="login-card">
         <header className="login-header">
           <h1>Join the Legends 🦸</h1>
@@ -63,7 +72,8 @@ const Register = () => {
         </form>
         <p>Already one of us? <Link to="/login">Sign in</Link> — welcome back 🤝</p>
       </section>
-    </main>
+      </main>
+    </>
   )
 }
 
