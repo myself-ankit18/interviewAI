@@ -16,18 +16,42 @@ const Home = () => {
     const [modelErrorModal, setModelErrorModal] = useState({ open: false })
     const [searchQuery, setSearchQuery] = useState('')
     const [entriesToShow, setEntriesToShow] = useState('All')
+    const [reportToDelete, setReportToDelete] = useState(null)
+    const [accountDeleteModal, setAccountDeleteModal] = useState(false)
+    const [deletePassword, setDeletePassword] = useState('')
+    const [deleteError, setDeleteError] = useState('')
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false)
     const resumeInputRef = useRef(null)
     const navigate = useNavigate()
 
     const availableModels = groqModels
         .filter(m => m.max_tokens >= 8000)
         .sort((a, b) => b.recommended - a.recommended);
-    const handleDeleteReport = async (reportId) => {
-        if(window.confirm("Are you sure you want to delete this report?")){
-            const success = await deleteReport(reportId)
-            if(success){
-              setReports(reports.filter(r => r._id !== reportId))
-            }
+    const handleDeleteReport = (reportId) => {
+        setReportToDelete(reportId)
+    }
+
+    const confirmDeleteReport = async () => {
+        if (!reportToDelete) return
+        const success = await deleteReport(reportToDelete)
+        if (success) {
+            setReports(reports.filter(r => r._id !== reportToDelete))
+            setReportToDelete(null)
+        }
+    }
+
+    const { handleDeleteAccount: apiDeleteAccount } = useAuth()
+
+    const confirmDeleteAccount = async (e) => {
+        e.preventDefault()
+        setDeleteError('')
+        setIsDeletingAccount(true)
+        const { success, error: apiError } = await apiDeleteAccount(deletePassword)
+        if (success) {
+            navigate('/login')
+        } else {
+            setDeleteError(apiError || 'Termination failed. Verify credentials.')
+            setIsDeletingAccount(false)
         }
     }
     const handleGenerateReport = async (e) => {
@@ -98,6 +122,86 @@ const Home = () => {
         </div>
       )}
 
+      {/* Report Delete Confirmation Modal */}
+      {reportToDelete && (
+        <div className="validation-modal-overlay">
+          <div className="validation-modal protocol-modal">
+            <div className="modal-icon danger">🗑️</div>
+            <h3>Terminate Brief?</h3>
+            <p>You are about to purge this tactical report from the archive. This action is irreversible.</p>
+            <div className="modal-actions-dual">
+              <button className="modal-close-btn secondary" onClick={() => setReportToDelete(null)}>
+                Abort
+              </button>
+              <button 
+                className="modal-close-btn danger" 
+                onClick={confirmDeleteReport}
+                disabled={loading}
+              >
+                {loading ? 'Purging...' : 'Confirm Purge'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Account Delete Confirmation Modal */}
+      {accountDeleteModal && (
+        <div className="validation-modal-overlay">
+          <div className="validation-modal protocol-modal">
+            <div className="modal-icon danger">⚠️</div>
+            <h3>Operative Termination</h3>
+            <p>Requesting complete removal of your profile and tactical assets. Enter your access credentials to verify identity.</p>
+            
+            <form onSubmit={confirmDeleteAccount} style={{marginTop: "1.5rem"}}>
+              <div className="form-group" style={{textAlign: "left", marginBottom: "1.5rem"}}>
+                <label style={{color: "var(--accent)"}}>Access Password</label>
+                <input 
+                  type="password" 
+                  className="table-search tactical-input" 
+                  placeholder="Enter secure password..."
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              {deleteError && (
+                <div className="form-error" style={{marginBottom: "1.5rem"}}>
+                  <p>{deleteError}</p>
+                </div>
+              )}
+
+              <div className="modal-actions-dual">
+                <button 
+                   type="button"
+                   className="modal-close-btn secondary" 
+                   onClick={() => {
+                     setAccountDeleteModal(false);
+                     setDeletePassword('');
+                     setDeleteError('');
+                   }}
+                >
+                  Abort
+                </button>
+                <button 
+                  type="submit"
+                  className="modal-close-btn danger" 
+                  disabled={isDeletingAccount}
+                >
+                  {isDeletingAccount ? (
+                    <span className="btn-loading">
+                      <span className="btn-spinner"></span>
+                      <span>Terminating...</span>
+                    </span>
+                  ) : 'Purge All Records'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Floating Orbs */}
       <div className="home-orb home-orb--1"></div>
       <div className="home-orb home-orb--2"></div>
@@ -114,6 +218,10 @@ const Home = () => {
           <button className="topbar-logout" onClick={onLogout}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Logout
+          </button>
+          <button className="topbar-logout delete-acc-btn" onClick={() => setAccountDeleteModal(true)}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            Delete Account
           </button>
         </div>
       </nav>

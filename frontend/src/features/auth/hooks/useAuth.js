@@ -2,14 +2,14 @@
 
 import { useContext } from "react";
 import { AuthContext } from "../auth.context";
-import { login,logout,register, getMe } from "../services/auth.api";
+import { login, logout, register, getMe, deleteAccount } from "../services/auth.api";
 
 export const useAuth = () => {
-    const {user, setUser, loading, setLoading} = useContext(AuthContext);
-    const handleLogin = async ({email, password}) => {
+    const { user, setUser, loading, setLoading } = useContext(AuthContext);
+    const handleLogin = async ({ email, password }) => {
         setLoading(true);
         try {
-            const data = await login({email, password});
+            const data = await login({ email, password });
             setUser(data.user);
             return { user: data.user };
         } catch (error) {
@@ -30,10 +30,10 @@ export const useAuth = () => {
             setLoading(false);
         }
     };
-    const handleRegister = async ({username, email, password}) => {
+    const handleRegister = async ({ username, email, password }) => {
         setLoading(true);
         try {
-            const data = await register({username, email, password});
+            const data = await register({ username, email, password });
             setUser(data.user);
             return { user: data.user };
         } catch (error) {
@@ -54,6 +54,16 @@ export const useAuth = () => {
             setLoading(false);
         }
     };
-    return {user, setUser, loading, setLoading, handleLogin, handleLogout, handleRegister, handleGetMe};
+    const handleDeleteAccount = async (password) => {
+        try {
+            const data = await deleteAccount(password);
+            setUser(null);
+            return { success: true, data };
+        } catch (error) {
+            console.error('Error deleting account:', error);
+            return { success: false, error };
+        }
+    };
+    return { user, setUser, loading, setLoading, handleLogin, handleLogout, handleRegister, handleGetMe, handleDeleteAccount };
 
-}
+}

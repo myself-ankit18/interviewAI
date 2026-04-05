@@ -53,6 +53,7 @@ export async function getMe() {
 // ─── REGISTRATION EMAIL OTP VERIFICATION ────────────────────────────────────
 // These 2 functions power the inline, button-free email verification on Register.
 // They are auto-triggered by UI events (blur + 6th digit typed), not by button clicks.
+// They are auto-triggered by UI events (blur + 6th digit typed), not by button clicks.
 
 /**
  * Step 1: Send Registration OTP — auto-called when user blurs the email field.
@@ -132,5 +133,15 @@ export async function resetPassword(resetToken, newPassword) {
     } catch (error) {
         console.error('Error resetting password:', error);
         throw error.response?.data?.message || 'Password reset failed.';
+    }
+}
+
+export async function deleteAccount(password) {
+    try {
+        const response = await api.delete('/api/auth/delete-account', { data: { password } });
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting account:', error);
+        throw error.response?.data?.message || 'Account deletion failed.';
     }
 }

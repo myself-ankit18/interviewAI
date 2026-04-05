@@ -28,5 +28,5 @@ authRouter.post("/verify-registration-otp", authController.verifyRegistrationOtp
 authRouter.post("/forgot-password", authController.forgotPasswordController);
 authRouter.post("/verify-otp", authController.verifyOtpController);
 authRouter.post("/reset-password", authController.resetPasswordController);
-
+authRouter.delete("/delete-account", authMiddleware.authUser, authController.deleteAccountController);
 module.exports = authRouter;

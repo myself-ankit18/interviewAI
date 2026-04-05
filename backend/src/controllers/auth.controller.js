@@ -130,7 +130,49 @@ async function verifyRegistrationOtpController(req, res) {
         verified: true
     })
 }
+async function deleteAccountController(req, res){
+    try {
+        const { password } = req.body;
+        if(!password){
+            return res.status(400).json({
+                success: false,
+                message: "Password is required for termination verification."
+            })
+        }
+        const user = await userModel.findById(req.user.id);
+        if(!user){
+            return res.status(404).json({
+                success: false,
+                message: "Operative record not found"
+            })
+        }
+        
+        // VERIFY PASSWORD: Use bcrypt to compare the provided candidate password
+        // with the hashed password stored in the database.
+        const isMatch = await bcrypt.compare(password, user.password);
+        if(!isMatch){
+            return res.status(401).json({
+                success: false,
+                message: "Invalid credentials. Protocol termination denied."
+            })
+        }
 
+        await userModel.findByIdAndDelete(user._id);
+
+        res.clearCookie('token'); // Clear the auth cookie on deletion
+
+        return res.status(200).json({
+            success: true,
+            message: "Account and associated tactical records purged successfully."
+        })
+    } catch (error) {
+        console.error('Error during account deletion:', error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to purge operative records. System anomaly detected."
+        })
+    }
+}
 // ─── REGISTER ─────────────────────────────────────────────────────────────────
 async function registerUserController(req, res) {
     const {username, email, password} = req.body;
@@ -435,5 +477,6 @@ module.exports = {
     verifyOtpController,
     resetPasswordController,
     sendRegistrationOtpController,
-    verifyRegistrationOtpController
+    verifyRegistrationOtpController,
+    deleteAccountController
 }
