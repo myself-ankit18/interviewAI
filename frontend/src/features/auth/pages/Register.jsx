@@ -104,12 +104,9 @@ const Register = () => {
         }
     }
 
-    // ─── AUTO-SEND OTP ON BLUR ────────────────────────────────────────
-    // When the user clicks away from the email field:
-    // 1. Check if email format is valid
-    // 2. Check if we haven't already sent OTP for this exact email
-    // 3. If both pass → auto-send OTP (no button click needed!)
-    const handleEmailBlur = async () => {
+    // ─── SEND OTP MANUALLY ───────────────────────────────────────────
+    // Triggered by the "Verify" button next to the email field.
+    const handleSendOtp = async () => {
         if (!emailValid || !email) return;
         if (otpSent && email === lastOtpEmailRef.current) return; // Already sent for this email
         if (otpVerified) return; // Already verified, no action needed
@@ -306,12 +303,22 @@ const Register = () => {
               required
               value={email}
               onChange={handleEmailChange}
-              onBlur={handleEmailBlur}  // AUTO-SEND OTP when user leaves this field
               className={`${emailTouched ? (emailValid ? 'input-valid' : 'input-invalid') : ''} ${otpVerified ? 'input-verified' : ''}`}
               disabled={otpVerified}     // Lock email field once verified (can't change it)
             />
-            {/* EMAIL FORMAT INDICATOR */}
-            {emailTouched && !otpVerified && (
+            {/* MANUAL VERIFY BUTTON: Only shown if email is valid and OTP not yet sent/verified */}
+            {emailValid && !otpSent && !otpVerified && (
+              <button 
+                type="button" 
+                className="verify-inline-btn" 
+                onClick={handleSendOtp}
+                disabled={otpSending}
+              >
+                {otpSending ? '...' : 'Verify'}
+              </button>
+            )}
+            {/* EMAIL FORMAT INDICATOR: Only shown if invalid, OR if valid and OTP already sent/verified */}
+            {emailTouched && !otpVerified && (!emailValid || otpSent) && (
               <span className={`field-indicator ${emailValid ? 'valid' : 'invalid'}`}>
                 {emailValid ? '✓' : '✗'}
               </span>
