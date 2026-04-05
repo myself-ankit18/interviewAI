@@ -1,5 +1,5 @@
 const pdfParse = require("pdf-parse")
-const {generateInterviewReport, generateResumePDF, generateProjectIdeas, validateInputs, generateFullReportPDF} = require("../services/ai.service")
+const {generateInterviewReport, generateResumePDF, generateProjectIdeas, validateInputs, generateFullReportPDF, convertHTMLToPDF} = require("../services/ai.service")
 const interviewReportModel = require("../models/interviewReport.model")
 async function generateInterviewReportController(req, res) {
     try {
@@ -112,16 +112,76 @@ async function generateResumePDFController(req, res) {
         });
     }
 
-    const pdf = await generateResumePDF({
+    // RESTRICTION: Check if this model has already been used to generate a resume for this report.
+    const existingResume = interviewReport.enhancedResumes?.find(r => r.aiModel === aiModel);
+    if (existingResume) {
+        return res.status(400).json({
+            success: false,
+            message: `You have already generated a professional resume using ${aiModel}. Please access it from your history or choose a different AI agent.`
+        });
+    }
+
+    const { pdf, html } = await generateResumePDF({
         resume: interviewReport.resume,
         selfDescription: interviewReport.selfDescription,
         jobDescription: interviewReport.jobDescription,
         aiModel
     });
 
+    // Persistent Storage: Save the generated HTML content to the history array.
+    interviewReport.enhancedResumes.push({
+        aiModel,
+        htmlContent: html
+    });
+    await interviewReport.save();
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="resume.pdf"');
     return res.status(200).send(pdf);
+}
+
+// Controller to download a previously generated resume from the history
+async function downloadExistingResumePDFController(req, res) {
+    const { interviewId } = req.params;
+    const { modelName } = req.query;
+    const interviewReport = await interviewReportModel.findOne({ _id: interviewId, user: req.user.id });
+
+    if (!interviewReport) {
+        return res.status(404).json({
+            success: false,
+            message: "Interview report not found"
+        });
+    }
+
+    const existingResume = interviewReport.enhancedResumes?.find(r => r.aiModel === modelName);
+    if (!existingResume) {
+        return res.status(404).json({
+            success: false,
+            message: "Historical resume version not found for this AI agent."
+        });
+    }
+
+    // Re-generate the PDF from the stored HTML content (free, no AI call needed)
+    const pdf = await convertHTMLToPDF(existingResume.htmlContent);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="enhanced_resume_${modelName.replace(/\//g, '_')}.pdf"`);
+    return res.status(200).send(pdf);
+}
+
+async function deleteInterviewReportController(req, res){
+    const {interviewId} = req.params;
+    const deleteReport = await interviewReportModel.findOneAndDelete({ _id: interviewId, user: req.user.id });
+    if(!deleteReport){
+        return res.status(404).json({
+            success: false,
+            message: "Interview report not found"
+        });
+    }
+    return res.status(200).json({
+        success: true,
+        message: "Interview report deleted successfully"
+    });
 }
 
 async function generateProjectIdeasController(req, res) {
@@ -198,6 +258,8 @@ module.exports = {
     getInterviewReportByIdController,
     getAllInterviewReportsController,
     generateResumePDFController,
+    downloadExistingResumePDFController,
     generateProjectIdeasController,
-    downloadFullReportPDFController
+    downloadFullReportPDFController,
+    deleteInterviewReportController
 };

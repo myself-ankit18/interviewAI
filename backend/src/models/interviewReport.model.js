@@ -113,7 +113,12 @@ const interviewReportSchema = new mongoose.Schema({
     resumeAnalysis: {
         matchedKeywords: [{ type: String }],
         missingKeywords: [{ type: String }]
-    }
+    },
+    enhancedResumes: [{
+        aiModel: { type: String, required: true },
+        htmlContent: { type: String, required: true },
+        createdAt: { type: Date, default: Date.now }
+    }]
 
 }, {
     timestamps: true

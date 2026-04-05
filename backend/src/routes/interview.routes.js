@@ -9,6 +9,8 @@ interviewRouter.get("/", authMiddleware.authUser, interview.getAllInterviewRepor
 interviewRouter.get("/:interviewId", authMiddleware.authUser, interview.getInterviewReportByIdController)
 
 interviewRouter.post("/resume/pdf/:interviewId", authMiddleware.authUser, interview.generateResumePDFController)
+interviewRouter.get("/resume/download/:interviewId", authMiddleware.authUser, interview.downloadExistingResumePDFController)
 interviewRouter.post("/project-ideas/:interviewId", authMiddleware.authUser, interview.generateProjectIdeasController)
 interviewRouter.get("/full-report/pdf/:interviewId", authMiddleware.authUser, interview.downloadFullReportPDFController)
+interviewRouter.delete("/:interviewId", authMiddleware.authUser, interview.deleteInterviewReportController)
 module.exports = interviewRouter

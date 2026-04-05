@@ -306,7 +306,7 @@ Schema: ${JSON.stringify(zodToJsonSchema(resumePdfSchema), null, 2)}`;
     
     const jsonResponse = JSON.parse(response.choices[0].message.content);
     const pdf = await convertHTMLToPDF(jsonResponse.html);
-    return pdf;
+    return { pdf, html: jsonResponse.html };
 }
 
 async function convertHTMLToPDF(htmlContent){

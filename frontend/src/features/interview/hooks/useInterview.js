@@ -1,4 +1,4 @@
-import {getAllInterviewReports, getInterviewReportById, generateInterviewReport, generateResumePDF, getProjectIdeas as getProjectIdeasAPI, downloadFullReportPDF} from "../services/interview.api"
+import {getAllInterviewReports, getInterviewReportById, generateInterviewReport, generateResumePDF, getProjectIdeas as getProjectIdeasAPI, downloadFullReportPDF, downloadExistingResumePDF, deleteInterviewReport} from "../services/interview.api"
 import {useContext, useEffect, useRef, useState} from "react"
 import {InterviewContext} from "../interview.context.jsx"
 import {useParams} from "react-router"
@@ -80,18 +80,55 @@ export const useInterview = () => {
                 document.body.appendChild(link)
                 link.click()
                 link.remove()
+                
+                // Refresh the local report state to include the new generation in the history
+                await getReportByID(interviewId)
         } catch (error) {
             if (error.name === 'AbortError') {
                 console.log('PDF generation cancelled by user');
                 return null;
             }
-            setError('Failed to generate resume PDF. Please try again.')
+            // Catch model restriction error from backend
+            if (error.response?.data?.message) {
+                setError(error.response.data.message);
+            } else {
+                setError('Failed to generate resume PDF. Please try again.')
+            }
             console.error("Error generating resume PDF:", error)
         } finally {
             setPdfLoading(false)
             abortControllerRef.current = null;
         }
         return data
+    }
+
+    const getExistingResumePDF = async (interviewId, modelName) => {
+        setError('')
+        setPdfLoading(true)
+        
+        if (abortControllerRef.current) abortControllerRef.current.abort();
+        abortControllerRef.current = new AbortController();
+
+        try {
+            const data = await downloadExistingResumePDF({interviewId, modelName}, abortControllerRef.current.signal)
+            const url = window.URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
+            const link = document.createElement('a')
+            link.href = url
+            link.setAttribute('download', `enhanced_resume_${modelName}.pdf`)
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('Download cancelled by user');
+                return;
+            }
+            setError('Failed to download existing resume version.')
+            console.error("Error downloading existing resume:", error)
+        } finally {
+            setPdfLoading(false)
+            abortControllerRef.current = null;
+        }
     }
 
     const getProjectIdeasForReport = async (interviewId) => {
@@ -142,6 +179,19 @@ export const useInterview = () => {
         }
     }
 
+    const deleteReport = async (reportId) =>{
+        try {
+            setLoading(true);
+            await deleteInterviewReport(reportId);
+            return true;
+        } catch (error) {
+            console.error("Error deleting interview report:", error);
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    }
+
     useEffect(() => {
         if (interviewId) {
             getReportByID(interviewId)
@@ -150,6 +200,6 @@ export const useInterview = () => {
         }
     }, [interviewId])
 
-    return {loading, pdfLoading, error, setError, report, reports, generateReport, getReportByID, getAllReports, getResumePDF, getProjectIdeasForReport, getFullReportPDF, cancelPdfGeneration}
+    return {deleteReport, loading, pdfLoading, error, setError, report, setReport, reports, setReports, generateReport, getReportByID, getAllReports, getResumePDF, getExistingResumePDF, getProjectIdeasForReport, getFullReportPDF, cancelPdfGeneration}
 }
 

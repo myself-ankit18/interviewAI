@@ -746,7 +746,6 @@
 
   tbody {
     tr {
-      cursor: pointer;
       transition: background 0.15s ease;
 
       &:nth-child(even) {
@@ -852,9 +851,36 @@
   text-underline-offset: 3px;
   text-transform: uppercase;
   transition: color 0.15s ease;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--accent);
+  }
 }
 
-tr:hover .table-view-link { color: var(--accent); }
+.table-delete-link {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.08em;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-transform: uppercase;
+  transition: color 0.15s ease;
+  cursor: pointer;
+  &:hover {
+    color: var(--accent);
+  }
+}
+
+// Row hover effects
+tr:hover {
+  // Only the border left accent remains
+  td:first-child {
+    border-left: 3px solid var(--accent);
+  }
+}
 
 // ─── Validation Modal ─────────────────────────────────────────────
 .validation-modal-overlay {

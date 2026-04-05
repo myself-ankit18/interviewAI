@@ -12,10 +12,11 @@ const Interview = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { interviewId } = useParams()
   const navigate = useNavigate()
-  const { report, loading, pdfLoading, error, setError, getReportByID, getResumePDF, getProjectIdeasForReport, getFullReportPDF, cancelPdfGeneration } = useInterview()
+  const { report, loading, pdfLoading, error, setError, getReportByID, getResumePDF, getExistingResumePDF, getProjectIdeasForReport, getFullReportPDF, cancelPdfGeneration } = useInterview()
   const { handleLogout, user } = useAuth()
 
   const [showDownloadModal, setShowDownloadModal] = useState(false)
+  const [modalView, setModalView] = useState('select') // 'select' or 'history'
   const [selectedModel, setSelectedModel] = useState('meta-llama/llama-4-scout-17b-16e-instruct')
   const [unavailableModels, setUnavailableModels] = useState([])
   
@@ -488,58 +489,145 @@ const Interview = () => {
       {/* Model Selection Modal for Download */}
       {showDownloadModal && (
         <div className="pdf-overlay" style={{ zIndex: 1000}}>
-          <div className="pdf-overlay-card model-select-modal" style={{textAlign: "left"}}>
-            <h3 style={{marginBottom: "0.5rem", fontSize: "1.5rem", background: "linear-gradient(45deg, #00cec9, #6c5ce7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent"}}>Download Enhanced Resume</h3>
-            <p style={{marginBottom: "1.5rem", color: "#a29bfe", fontSize: "0.95rem"}}>Choose an AI model to professionally rewrite and enhance your resume text before exporting to PDF.</p>
-            
-            <div className="form-group">
-              <label htmlFor="aiModelDownload" style={{display: "block", marginBottom: "0.5rem", fontWeight: "600", color: "#eef2f3"}}>
-                <span className="label-icon" style={{marginRight: "8px"}}>🧠</span>
-                Select AI Agent
-              </label>
-              <div className="model-select-wrapper" style={{position: "relative"}}>
-                <select 
-                  id="aiModelDownload" 
-                  value={selectedModel} 
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                  className="model-select"
-                  style={{width: "100%", padding: "12px", borderRadius: "12px", background: "rgba(10, 11, 26, 0.6)", border: "1px solid rgba(108, 92, 231, 0.3)", color: "white", outline: "none"}}
-                >
-                  {availableModels.map((model) => {
-                    const isUnavailable = unavailableModels.includes(model.id);
-                    return (
-                      <option 
-                        key={model.id} 
-                        value={model.id} 
-                        disabled={isUnavailable}
-                      >
-                        {model.recommended ? '⭐ ' : ''}{model.name} {model.developer ? `(${model.developer})` : ''} {isUnavailable ? '- Unavailable / Out of Credits' : ''}
-                      </option>
-                    )
-                  })}
-                </select>
+          <div className="pdf-overlay-card model-select-modal" style={{textAlign: "left", maxWidth: "550px", width: "95%"}}>
+            <header style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", paddingBottom: "1rem", borderBottom: "1px solid rgba(255, 255, 255, 0.05)"}}>
+              <div>
+                <h3 style={{fontSize: "1.4rem", fontWeight: "700", background: "linear-gradient(45deg, #00cec9, #6c5ce7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent"}}>
+                  {modalView === 'select' ? 'Resume Synthesis' : 'Archived Versions'}
+                </h3>
+                <p style={{fontSize: "0.75rem", color: "#636e72", marginTop: "2px"}}>{modalView === 'select' ? 'Configure neural rewriting parameters' : 'Access previously forged tactical documents'}</p>
               </div>
-            </div>
-            
-            <div style={{display: "flex", gap: "1rem", marginTop: "2rem"}}>
               <button 
-                onClick={() => setShowDownloadModal(false)}
-                style={{flex: 1, padding: "12px", borderRadius: "10px", background: "transparent", border: "1px solid rgba(255, 255, 255, 0.1)", color: "white", cursor: "pointer"}}
+                onClick={() => setModalView(modalView === 'select' ? 'history' : 'select')}
+                style={{padding: "8px 16px", borderRadius: "10px", background: "rgba(108, 92, 231, 0.15)", border: "1px solid rgba(108, 92, 231, 0.2)", color: "#a29bfe", fontSize: "0.85rem", cursor: "pointer", fontWeight: "600", transition: "all 0.2s"}}
+                onMouseEnter={(e) => e.target.style.background = "rgba(108, 92, 231, 0.25)"}
+                onMouseLeave={(e) => e.target.style.background = "rgba(108, 92, 231, 0.15)"}
               >
-                Cancel
+                {modalView === 'select' ? '📜 History' : '➕ Forge New'}
               </button>
-              <button 
-                 onClick={handleDownloadSubmit}
-                 disabled={pdfLoading}
-                 style={{flex: 1, padding: "12px", borderRadius: "10px", background: "linear-gradient(45deg, #6c5ce7, #00cec9)", border: "none", color: "white", fontWeight: "bold", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px"}}
-              >
-                {pdfLoading ? (
-                  <>Building...</>
+            </header>
+
+            {modalView === 'select' ? (
+              <div className="modal-content-fade-in">
+                <p style={{marginBottom: "1.5rem", color: "#a29bfe", fontSize: "0.95rem", lineHeight: "1.4"}}>Select a specialized AI agent to professionally restructure and enhance your professional narrative. Each agent brings a unique tactical perspective.</p>
+                
+                <div className="form-group" style={{marginBottom: "2rem"}}>
+                  <label htmlFor="aiModelDownload" style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", fontWeight: "600", color: "#eef2f3", fontSize: "0.9rem"}}>
+                    <span style={{display: "flex", alignItems: "center", gap: "8px"}}><span className="label-icon">🧠</span> Active AI Agent</span>
+                    {report.enhancedResumes?.some(r => r.aiModel === selectedModel) && (
+                      <span style={{color: "#ff7675", fontSize: "0.7rem", padding: "2px 8px", background: "rgba(255, 118, 117, 0.1)", borderRadius: "4px", border: "1px solid rgba(255, 118, 117, 0.2)"}}>DEPLOYED</span>
+                    )}
+                  </label>
+                  <div className="model-select-wrapper" style={{position: "relative"}}>
+                    <select 
+                      id="aiModelDownload" 
+                      value={selectedModel} 
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                      className="model-select"
+                      style={{width: "100%", padding: "14px", borderRadius: "12px", background: "rgba(10, 11, 26, 0.8)", border: "1px solid rgba(108, 92, 231, 0.4)", color: "white", outline: "none", fontSize: "0.95rem", cursor: "pointer", appearance: "none"}}
+                    >
+                      {availableModels.map((model) => {
+                        const isUnavailable = unavailableModels.includes(model.id);
+                        const isAlreadyUsed = report.enhancedResumes?.some(r => r.aiModel === model.id);
+                        return (
+                          <option 
+                            key={model.id} 
+                            value={model.id} 
+                            disabled={isUnavailable}
+                            style={{background: "#0a0b1a", color: isAlreadyUsed ? '#ff7675' : 'white'}}
+                          >
+                            {model.recommended ? '⭐ ' : ''}{model.name} {isUnavailable ? ' (Offline)' : ''}{isAlreadyUsed ? ' (Already Processed)' : ''}
+                          </option>
+                        )
+                      })}
+                    </select>
+                    <div style={{position: "absolute", right: "15px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#6c5ce7"}}>▼</div>
+                  </div>
+                  
+                  {report.enhancedResumes?.some(r => r.aiModel === selectedModel) ? (
+                    <div style={{marginTop: "1rem", padding: "1rem", borderRadius: "10px", background: "rgba(255, 118, 117, 0.05)", border: "1px solid rgba(255, 118, 117, 0.15)", display: "flex", gap: "10px", alignItems: "flex-start"}}>
+                      <span style={{fontSize: "1.2rem"}}>🚫</span>
+                      <p style={{margin: 0, color: "#fab1a0", fontSize: "0.85rem", lineHeight: "1.4"}}>
+                        <strong>Protocol Restriction:</strong> This model has already generated an enhanced version. Access the existing file in the History tab to prevent redundant API cycles.
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{marginTop: "1rem", padding: "1rem", borderRadius: "10px", background: "rgba(0, 206, 201, 0.05)", border: "1px solid rgba(0, 206, 201, 0.1)", display: "flex", gap: "10px", alignItems: "flex-start"}}>
+                      <span style={{fontSize: "1.2rem"}}>⚡</span>
+                      <p style={{margin: 0, color: "#81ecec", fontSize: "0.85rem", lineHeight: "1.4"}}>
+                        <strong>Deployment:</strong> Generating a new version will rewrite your resume with this AI's specific logic. This action is recorded in your tactical history.
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                <div style={{display: "flex", gap: "1rem", marginTop: "2rem"}}>
+                  <button 
+                    onClick={() => setShowDownloadModal(false)}
+                    style={{flex: 1, padding: "14px", borderRadius: "12px", background: "transparent", border: "1px solid rgba(255, 255, 255, 0.15)", color: "white", cursor: "pointer", fontWeight: "600", transition: "all 0.2s"}}
+                    onMouseEnter={(e) => e.target.style.border = "1px solid rgba(255, 255, 255, 0.3)"}
+                    onMouseLeave={(e) => e.target.style.border = "1px solid rgba(255, 255, 255, 0.15)"}
+                  >
+                    Abort
+                  </button>
+                  <button 
+                    onClick={handleDownloadSubmit}
+                    disabled={pdfLoading || report.enhancedResumes?.some(r => r.aiModel === selectedModel)}
+                    style={{flex: 1.5, padding: "14px", borderRadius: "12px", background: report.enhancedResumes?.some(r => r.aiModel === selectedModel) ? "rgba(255,255,255,0.02)" : "linear-gradient(45deg, #6c5ce7, #00cec9)", border: "none", color: report.enhancedResumes?.some(r => r.aiModel === selectedModel) ? "rgba(255,255,255,0.2)" : "white", fontWeight: "700", cursor: report.enhancedResumes?.some(r => r.aiModel === selectedModel) ? "not-allowed" : "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "10px", boxShadow: report.enhancedResumes?.some(r => r.aiModel === selectedModel) ? "none" : "0 4px 15px rgba(108, 92, 231, 0.3)"}}
+                  >
+                    {pdfLoading ? (
+                      <><span className="loading-spinner-tiny"></span> Processing...</>
+                    ) : (
+                      <>📥 Synthesize & Export</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="resume-history-list modal-content-fade-in" style={{maxHeight: "450px", overflowY: "auto", paddingRight: "8px"}}>
+                {report.enhancedResumes && report.enhancedResumes.length > 0 ? (
+                  <div style={{display: "flex", flexDirection: "column", gap: "12px"}}>
+                    {report.enhancedResumes.map((res, idx) => {
+                      const modelInfo = availableModels.find(m => m.id === res.aiModel);
+                      return (
+                        <div key={idx} style={{background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "14px", padding: "1.2rem", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "all 0.2s", backdropFilter: "blur(5px)"}} className="history-card-hover">
+                          <div style={{display: "flex", alignItems: "center", gap: "15px"}}>
+                            <div style={{width: "40px", height: "40px", borderRadius: "10px", background: "rgba(108, 92, 231, 0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem"}}>📄</div>
+                            <div>
+                              <div style={{fontWeight: "700", color: "#fff", fontSize: "0.95rem"}}>{modelInfo?.name || res.aiModel.split('/').pop()}</div>
+                              <div style={{fontSize: "0.75rem", color: "#636e72", marginTop: "4px", display: "flex", alignItems: "center", gap: "5px"}}>
+                                <span style={{color: "#00cec9"}}>●</span> Forged on {new Date(res.createdAt).toLocaleDateString()}
+                              </div>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => getExistingResumePDF(interviewId, res.aiModel)}
+                            disabled={pdfLoading}
+                            style={{padding: "10px 18px", borderRadius: "10px", background: "rgba(0, 206, 201, 0.12)", border: "1px solid rgba(0, 206, 201, 0.25)", color: "#00cec9", fontSize: "0.85rem", cursor: "pointer", fontWeight: "600", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "8px"}}
+                            onMouseEnter={(e) => e.target.style.background = "rgba(0, 206, 201, 0.2)"}
+                            onMouseLeave={(e) => e.target.style.background = "rgba(0, 206, 201, 0.12)"}
+                          >
+                            {pdfLoading ? '...' : <>Download</>}
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
                 ) : (
-                  <>📥 Download PDF</>
+                  <div style={{textAlign: "center", padding: "3rem 1rem", color: "#636e72"}}>
+                    <div style={{fontSize: "3rem", marginBottom: "1rem", opacity: "0.5"}}>💿</div>
+                    <h3 style={{color: "#fff", marginBottom: "0.5rem"}}>Archive Empty</h3>
+                    <p style={{fontSize: "0.85rem"}}>No professionally enhanced documents have been forged for this report yet.</p>
+                  </div>
                 )}
-              </button>
-            </div>
+                <button 
+                  onClick={() => setShowDownloadModal(false)}
+                  style={{width: "100%", padding: "14px", marginTop: "1.5rem", borderRadius: "12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255, 255, 255, 0.1)", color: "#636e72", cursor: "pointer", fontWeight: "600"}}
+                >
+                  Close Data Vault
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

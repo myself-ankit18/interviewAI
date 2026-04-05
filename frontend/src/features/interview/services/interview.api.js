@@ -51,6 +51,15 @@ export const generateResumePDF = async ({interviewId, aiModel}, signal) => {
     return response.data;
 };
 
+export const downloadExistingResumePDF = async ({interviewId, modelName}, signal) => {
+    const response = await api.get(`/api/interview/resume/download/${interviewId}`, {
+        params: { modelName },
+        responseType: 'blob',
+        signal
+    });
+    return response.data;
+};
+
 export const getProjectIdeas = async ({interviewId}) => {
     try {
         const response = await api.post(`/api/interview/project-ideas/${interviewId}`);
@@ -68,3 +77,13 @@ export const downloadFullReportPDF = async (interviewId, signal) => {
     });
     return response.data;
 };
+
+export const deleteInterviewReport = async (interviewId) =>{
+    try {
+        const res = await api.delete(`/api/interview/${interviewId}`);
+        return res.data;
+    } catch (error) {
+        console.error("Error deleting interview report:", error);
+        throw error;
+    }
+}

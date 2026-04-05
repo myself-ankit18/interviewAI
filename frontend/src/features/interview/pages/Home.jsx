@@ -6,7 +6,7 @@ import '../styles/home.scss'
 import { groqModels } from '../../../data/models.js'
 
 const Home = () => {
-    const {loading, error, generateReport, reports} = useInterview()
+    const {loading, error, generateReport, reports, deleteReport, setReports} = useInterview()
     const {handleLogout, user} = useAuth()
     const [jobDescription, setJobDescription] = useState('')
     const [selfDescription, setSelfDescription] = useState('')
@@ -22,7 +22,14 @@ const Home = () => {
     const availableModels = groqModels
         .filter(m => m.max_tokens >= 8000)
         .sort((a, b) => b.recommended - a.recommended);
-
+    const handleDeleteReport = async (reportId) => {
+        if(window.confirm("Are you sure you want to delete this report?")){
+            const success = await deleteReport(reportId)
+            if(success){
+              setReports(reports.filter(r => r._id !== reportId))
+            }
+        }
+    }
     const handleGenerateReport = async (e) => {
         e.preventDefault()
         const resumeFile = resumeInputRef.current.files[0]
@@ -292,11 +299,12 @@ const Home = () => {
                     <th>AI Model</th>
                     <th>Date</th>
                     <th></th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {displayedReports.length > 0 ? displayedReports.map((report) => (
-                    <tr key={report._id} onClick={() => navigate(`/interview/${report._id}`)}>
+                    <tr key={report._id}>
                       <td>
                         <span className={`table-score ${report.matchScore >= 80 ? 'score-high' : report.matchScore >= 60 ? 'score-good' : 'score-low'}`}>
                           {report.matchScore}%
@@ -310,7 +318,10 @@ const Home = () => {
                         {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </td>
                       <td>
-                        <span className="table-view-link">View →</span>
+                        <span onClick={() => navigate(`/interview/${report._id}`)}  className="table-view-link">View</span>
+                      </td>
+                      <td>
+                        <span onClick={() => handleDeleteReport(report._id)} className="table-delete-link">Delete</span>
                       </td>
                     </tr>
                   )) : (
