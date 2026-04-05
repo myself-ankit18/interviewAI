@@ -414,9 +414,87 @@ ${JSON.stringify(zodToJsonSchema(projectIdeasSchema), null, 2)}`;
 }
 
 
+async function validateInputs({resume, selfDescription, jobDescription, aiModel}){
+    const validationSchema = z.object({
+        isValid: z.boolean().describe("true ONLY if ALL three inputs are genuinely valid. false if ANY single input is problematic."),
+        reason: z.string().describe("If isValid is false, a brief explanation of which field failed and why.")
+    });
+
+    const prompt = `You are an EXTREMELY STRICT input validation gatekeeper for an AI interview preparation tool. Your job is to REJECT bad inputs.
+
+=== INPUTS TO VALIDATE ===
+
+FIELD 1 - Resume (extracted from a PDF):
+"""
+${resume && resume.trim().length > 0 ? resume.substring(0, 2000) : '[EMPTY]'}
+"""
+
+FIELD 2 - Self-Description (user typed):
+"""
+${selfDescription && selfDescription.trim().length > 0 ? selfDescription : '[EMPTY]'}
+"""
+
+FIELD 3 - Job Description (user typed):
+"""
+${jobDescription && jobDescription.trim().length > 0 ? jobDescription : '[EMPTY]'}
+"""
+
+=== STRICT VALIDATION RULES ===
+
+You MUST return isValid: false if ANY of the following is true:
+
+1. **Resume**: Must contain REAL resume content — work experience, education, skills, projects, or career summary. REJECT if it's:
+   - Random text, gibberish, lorem ipsum
+   - Unrelated content (stories, recipes, lyrics, jokes)
+   - Just a few random words or keyboard smash (e.g., "asdf", "test", "hello world")
+   - A completely blank/empty document
+   - Content that has nothing to do with a person's professional background
+
+2. **Self-Description**: Must be a person describing themselves professionally. REJECT if it's:
+   - Random characters or single words
+   - Completely unrelated to career/skills/experience
+   - Offensive, spam, or trolling content
+   - Less than 10 meaningful words
+
+3. **Job Description**: Must describe an actual job role or position. REJECT if it's:
+   - Random characters or meaningless text
+   - Not describing an actual job (e.g., "make me a sandwich", "fly to the moon")
+   - Completely unrelated to employment/hiring (recipes, stories, etc.)
+   - Less than 15 meaningful words
+
+IMPORTANT: Be AGGRESSIVE about rejecting bad inputs. When in doubt, REJECT. It is better to wrongly reject than to waste expensive AI credits on garbage.
+
+Return JSON: { "isValid": boolean, "reason": string }`;
+
+    try {
+        const response = await ai.chat.completions.create({
+            model: aiModel || "llama-3.1-8b-instant",
+            messages: [{
+                role: "system",
+                content: "You are an extremely strict validation gatekeeper. You MUST reject any input that is not genuinely a resume, self-description, or job description. When in doubt, REJECT. Respond with valid JSON only."
+            }, {
+                role: "user",
+                content: prompt
+            }],
+            temperature: 0.05,
+            max_tokens: 200,
+            response_format: { type: "json_object" }
+        });
+
+        const result = JSON.parse(response.choices[0].message.content);
+        console.log("Validation result:", result);
+        return result;
+    } catch (e) {
+        console.error("Input validation AI call failed, letting it pass by default:", e);
+        return { isValid: true, reason: '' };
+    }
+}
+
+
 module.exports = {
     generateInterviewReport,
     generateResumePDF,
     convertHTMLToPDF,
-    generateProjectIdeas
+    generateProjectIdeas,
+    validateInputs
 }

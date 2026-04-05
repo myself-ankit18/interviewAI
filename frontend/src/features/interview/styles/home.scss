@@ -623,11 +623,18 @@
 
 .reports-header {
   display: flex;
-  align-items: baseline;
+  align-items: flex-end;
   justify-content: space-between;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 3px solid var(--ink);
+  flex-wrap: wrap;
+  gap: 1.5rem;
+
+  .reports-header-text {
+    flex: 1;
+    min-width: 250px;
+  }
 
   h2 {
     font-family: 'Playfair Display', serif;
@@ -645,6 +652,66 @@
     font-family: 'DM Mono', monospace;
     letter-spacing: 0.07em;
     text-transform: uppercase;
+  }
+}
+
+.reports-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .search-icon {
+      position: absolute;
+      left: 0.85rem;
+      font-size: 0.85rem;
+      opacity: 0.6;
+    }
+
+    .table-search {
+      padding: 0.55rem 1rem 0.55rem 2.25rem;
+      border: 1px solid var(--rule-heavy);
+      background: var(--paper-warm);
+      color: var(--text-primary);
+      outline: none;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.82rem;
+      width: 220px;
+      transition: all 0.2s ease;
+
+      &:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px var(--accent);
+      }
+    }
+  }
+
+  .limit-wrapper {
+    .table-limit-select {
+      padding: 0.55rem 2rem 0.55rem 1rem;
+      border: 1px solid var(--rule-heavy);
+      background: var(--paper-warm);
+      color: var(--text-primary);
+      outline: none;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.82rem;
+      cursor: pointer;
+      appearance: none;
+      position: relative;
+      background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23a8a090%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.7rem top 50%;
+      background-size: 0.65rem auto;
+
+      &:focus {
+        border-color: var(--accent);
+      }
+    }
   }
 }
 
@@ -707,6 +774,15 @@
       border-left: 3px solid transparent;
 
       &:first-child { border-left-width: 3px; }
+      
+      &.table-empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-muted);
+        font-style: italic;
+        border-left: 0;
+        cursor: default;
+      }
     }
   }
 }
@@ -780,6 +856,92 @@
 
 tr:hover .table-view-link { color: var(--accent); }
 
+// ─── Validation Modal ─────────────────────────────────────────────
+.validation-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 14, 12, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.validation-modal {
+  background: var(--paper-warm);
+  border: 2px solid var(--accent);
+  max-width: 500px;
+  width: 100%;
+  padding: 3rem 2.5rem;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  animation: modal-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+
+  .modal-icon {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    animation: shake 0.6s 0.2s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+
+  h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.75rem;
+    color: var(--ink);
+    margin: 0 0 0.75rem;
+  }
+
+  p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0 0 1.5rem;
+  }
+
+  .modal-reason {
+    background: rgba(212, 130, 26, 0.08);
+    border: 1px solid rgba(212, 130, 26, 0.2);
+    padding: 1.25rem;
+    color: var(--accent-warm);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    text-align: left;
+  }
+
+  .modal-close-btn {
+    padding: 0.8rem 1.5rem;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--accent);
+      color: var(--paper);
+    }
+  }
+}
+
+@keyframes modal-pop {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
 // ─── Responsive: Tablet ───────────────────────────────────────────
 @media (max-width: 768px) {
   .home-topbar { padding: 0 1.5rem; }
@@ -788,6 +950,13 @@ tr:hover .table-view-link { color: var(--accent); }
   .hero-subtitle { font-size: 0.9rem; }
   .home-form-card { padding: 2rem 1.5rem; }
   .hero-meta { display: none; }
+  
+  .reports-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .reports-controls { width: 100%; }
+  .search-wrapper { flex: 1; .table-search { width: 100%; } }
 }
 
 // ─── Responsive: Mobile ───────────────────────────────────────────
@@ -805,6 +974,9 @@ tr:hover .table-view-link { color: var(--accent); }
   .form-group textarea { font-size: 0.875rem; }
   .file-upload-zone { padding: 1.25rem; }
   .home-submit-btn { font-size: 0.8rem; letter-spacing: 0.08em; }
-  .reports-header { flex-direction: column; gap: 0.35rem; h2 { font-size: 1.3rem; } }
+  
+  .reports-header-text h2 { font-size: 1.3rem; }
+  .reports-controls { flex-direction: column; align-items: stretch; }
+  .limit-wrapper .table-limit-select { width: 100%; }
   .home-reports { margin-top: 3rem; }
 }

@@ -13,6 +13,9 @@ const Home = () => {
     const [selectedFile, setSelectedFile] = useState(null)
     const [selectedModel, setSelectedModel] = useState('meta-llama/llama-4-scout-17b-16e-instruct')
     const [unavailableModels, setUnavailableModels] = useState([])
+    const [validationModal, setValidationModal] = useState({ open: false, reason: '' })
+    const [searchQuery, setSearchQuery] = useState('')
+    const [entriesToShow, setEntriesToShow] = useState('All')
     const resumeInputRef = useRef(null)
     const navigate = useNavigate()
 
@@ -24,9 +27,15 @@ const Home = () => {
         e.preventDefault()
         const resumeFile = resumeInputRef.current.files[0]
         const data = await generateReport({resume: resumeFile, selfDescription, jobDescription, aiModel: selectedModel})
+        
+        if (data && data.isValidationError) {
+            setValidationModal({ open: true, reason: data.reason })
+            return
+        }
+
         if (data && data._id) {
             navigate(`/interview/${data._id}`)
-        } else {
+        } else if (data === null) {
             if (!unavailableModels.includes(selectedModel)) {
                 setUnavailableModels(prev => [...prev, selectedModel])
             }
@@ -38,9 +47,32 @@ const Home = () => {
         navigate('/login')
     }
 
+    const filteredReports = reports ? reports.filter(r => {
+        const query = searchQuery.toLowerCase()
+        return (r.title && r.title.toLowerCase().includes(query)) || 
+               (r.aiModel && r.aiModel.toLowerCase().includes(query)) ||
+               (new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toLowerCase().includes(query))
+    }) : []
+
+    const displayedReports = entriesToShow === 'All' ? filteredReports : filteredReports.slice(0, parseInt(entriesToShow, 10))
 
   return (
     <div className="home-page">
+      {/* Validation Modal */}
+      {validationModal.open && (
+        <div className="validation-modal-overlay">
+          <div className="validation-modal">
+            <div className="modal-icon">🚫</div>
+            <h3>Hold Up, Boss!</h3>
+            <p>Our AI gatekeeper rejected these inputs:</p>
+            <div className="modal-reason">{validationModal.reason}</div>
+            <button className="modal-close-btn" onClick={() => setValidationModal({ open: false, reason: '' })}>
+              Got it, let me fix it
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Floating Orbs */}
       <div className="home-orb home-orb--1"></div>
       <div className="home-orb home-orb--2"></div>
@@ -211,8 +243,34 @@ const Home = () => {
         {reports && reports.length > 0 && (
           <div className="home-reports">
             <div className="reports-header">
-              <h2>📊 Your Battle History</h2>
-              <p>Previous interview reports — because legends keep track of their wins</p>
+              <div className="reports-header-text">
+                <h2>📊 Your Battle History</h2>
+                <p>Previous interview reports — because legends keep track of their wins</p>
+              </div>
+              <div className="reports-controls">
+                <div className="search-wrapper">
+                    <span className="search-icon">🔍</span>
+                    <input 
+                        type="text" 
+                        placeholder="Search title, model..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="table-search"
+                    />
+                </div>
+                <div className="limit-wrapper">
+                    <select 
+                        value={entriesToShow} 
+                        onChange={(e) => setEntriesToShow(e.target.value)}
+                        className="table-limit-select"
+                    >
+                        {reports.length > 3 && <option value="3">Show 3</option>}
+                        {reports.length > 5 && <option value="5">Show 5</option>}
+                        {reports.length > 10 && <option value="10">Show 10</option>}
+                        <option value="All">Show All ({reports.length})</option>
+                    </select>
+                </div>
+              </div>
             </div>
             <div className="reports-table-wrap">
               <table className="reports-table">
@@ -226,7 +284,7 @@ const Home = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {reports.map((report) => (
+                  {displayedReports.length > 0 ? displayedReports.map((report) => (
                     <tr key={report._id} onClick={() => navigate(`/interview/${report._id}`)}>
                       <td>
                         <span className={`table-score ${report.matchScore >= 80 ? 'score-high' : report.matchScore >= 60 ? 'score-good' : 'score-low'}`}>
@@ -244,7 +302,11 @@ const Home = () => {
                         <span className="table-view-link">View →</span>
                       </td>
                     </tr>
-                  ))}
+                  )) : (
+                    <tr>
+                      <td colSpan="5" className="table-empty-state">No reports found matching your search.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

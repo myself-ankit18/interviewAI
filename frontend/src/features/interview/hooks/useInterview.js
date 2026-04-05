@@ -18,13 +18,17 @@ export const useInterview = () => {
         try {
             data = await generateInterviewReport({resume, selfDescription, jobDescription, aiModel})
             setReport(data.data)
+            return data.data
         } catch (error) {
+            if (error.response?.data?.isValidationError) {
+                return { isValidationError: true, reason: error.response.data.reason };
+            }
             setError('Failed to generate interview report. Please try again.')
             console.error("Error generating interview report:", error)
+            return null
         } finally {
             setLoading(false)
         }
-            return data.data
   }
     const getReportByID = async (interviewId) =>{
         setLoading(true)

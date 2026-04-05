@@ -1,38 +1,62 @@
 const pdfParse = require("pdf-parse")
-const {generateInterviewReport, generateResumePDF, generateProjectIdeas} = require("../services/ai.service")
+const {generateInterviewReport, generateResumePDF, generateProjectIdeas, validateInputs} = require("../services/ai.service")
 const interviewReportModel = require("../models/interviewReport.model")
 async function generateInterviewReportController(req, res) {
-    const resumeFile = req.file
-    const resumeData = await (new pdfParse.PDFParse(Uint8Array.from(resumeFile.buffer))).getText();
-    const resumeContent = resumeData.text
-    const {selfDescription, jobDescription, aiModel} = req.body
-    const interviewReportbyAI = await generateInterviewReport({
-        resume: resumeContent,
-        selfDescription,
-        jobDescription,
-        aiModel
-    });
+    try {
+        const resumeFile = req.file
+        const resumeData = await (new pdfParse.PDFParse(Uint8Array.from(resumeFile.buffer))).getText();
+        const resumeContent = resumeData.text
+        const {selfDescription, jobDescription, aiModel} = req.body
 
-    // Generate a title from the job description (first 50 characters)
-    const title = jobDescription.length > 50
-        ? jobDescription.substring(0, 50) + '...'
-        : jobDescription
+        const validation = await validateInputs({
+            resume: resumeContent,
+            selfDescription,
+            jobDescription,
+            aiModel
+        });
 
-    const interviewReport = await interviewReportModel.create({
-        user: req.user.id,
-        resume: resumeContent,
-        selfDescription,
-        jobDescription,
-        title,
-        aiModel: aiModel || 'meta-llama/llama-4-scout-17b-16e-instruct',
-        ...JSON.parse(interviewReportbyAI)
-    })
-    return res.status(201).json({
-        success: true,
-        data: interviewReport,
-        message: "Interview report generated successfully"
-    })
+        if (!validation.isValid) {
+            return res.status(400).json({
+                success: false,
+                isValidationError: true,
+                message: "Validation Failed",
+                reason: validation.reason
+            });
+        }
 
+        const interviewReportbyAI = await generateInterviewReport({
+            resume: resumeContent,
+            selfDescription,
+            jobDescription,
+            aiModel
+        });
+
+        // Generate a title from the job description (first 50 characters)
+        const title = jobDescription.length > 50
+            ? jobDescription.substring(0, 50) + '...'
+            : jobDescription
+
+        const interviewReport = await interviewReportModel.create({
+            user: req.user.id,
+            resume: resumeContent,
+            selfDescription,
+            jobDescription,
+            title,
+            aiModel: aiModel || 'meta-llama/llama-4-scout-17b-16e-instruct',
+            ...JSON.parse(interviewReportbyAI)
+        })
+        return res.status(201).json({
+            success: true,
+            data: interviewReport,
+            message: "Interview report generated successfully"
+        })
+    } catch (error) {
+        console.error("Error generating interview report:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to generate interview report. Please try again."
+        });
+    }
 }
 
 async function getInterviewReportByIdController(req, res) {
