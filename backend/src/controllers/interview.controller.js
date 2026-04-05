@@ -1,5 +1,5 @@
 const pdfParse = require("pdf-parse")
-const {generateInterviewReport, generateResumePDF, generateProjectIdeas, validateInputs} = require("../services/ai.service")
+const {generateInterviewReport, generateResumePDF, generateProjectIdeas, validateInputs, generateFullReportPDF} = require("../services/ai.service")
 const interviewReportModel = require("../models/interviewReport.model")
 async function generateInterviewReportController(req, res) {
     try {
@@ -167,12 +167,37 @@ async function generateProjectIdeasController(req, res) {
         data: parsedProjectIdeas
     });
 }
+async function downloadFullReportPDFController(req, res) {
+    try {
+        const { interviewId } = req.params;
+        const interviewReport = await interviewReportModel.findOne({ _id: interviewId, user: req.user.id });
 
+        if (!interviewReport) {
+            return res.status(404).json({
+                success: false,
+                message: "Interview report not found"
+            });
+        }
+
+        const pdf = await generateFullReportPDF(interviewReport);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="interview_report_${interviewId}.pdf"`);
+        return res.status(200).send(pdf);
+    } catch (error) {
+        console.error("Error generating full report PDF:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to generate full report PDF"
+        });
+    }
+}
 
 module.exports = {
     generateInterviewReportController,
     getInterviewReportByIdController,
     getAllInterviewReportsController,
     generateResumePDFController,
-    generateProjectIdeasController
+    generateProjectIdeasController,
+    downloadFullReportPDFController
 };

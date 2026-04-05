@@ -1,4 +1,4 @@
-import {getAllInterviewReports, getInterviewReportById, generateInterviewReport, generateResumePDF, getProjectIdeas as getProjectIdeasAPI} from "../services/interview.api"
+import {getAllInterviewReports, getInterviewReportById, generateInterviewReport, generateResumePDF, getProjectIdeas as getProjectIdeasAPI, downloadFullReportPDF} from "../services/interview.api"
 import {useContext, useEffect, useState} from "react"
 import {InterviewContext} from "../interview.context.jsx"
 import {useParams} from "react-router"
@@ -95,6 +95,26 @@ export const useInterview = () => {
         }
     }
 
+    const getFullReportPDF = async (interviewId) => {
+        setError('')
+        setPdfLoading(true)
+        try {
+            const data = await downloadFullReportPDF(interviewId)
+            const url = window.URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
+            const link = document.createElement('a')
+            link.href = url
+            link.setAttribute('download', `interview_report_${interviewId}.pdf`)
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+        } catch (error) {
+            setError('Failed to download full report PDF. Please try again.')
+            console.error("Error downloading full report PDF:", error)
+        } finally {
+            setPdfLoading(false)
+        }
+    }
+
     useEffect(() => {
         if (interviewId) {
             getReportByID(interviewId)
@@ -103,6 +123,6 @@ export const useInterview = () => {
         }
     }, [interviewId])
 
-    return {loading, pdfLoading, error, setError, report, reports, generateReport, getReportByID, getAllReports, getResumePDF, getProjectIdeasForReport}
+    return {loading, pdfLoading, error, setError, report, reports, generateReport, getReportByID, getAllReports, getResumePDF, getProjectIdeasForReport, getFullReportPDF}
 }
 

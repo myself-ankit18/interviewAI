@@ -465,11 +465,261 @@ Return JSON: { "isValid": boolean, "reason": string }`;
     }
 }
 
+async function generateFullReportPDF(reportData){
+    const { 
+        title, 
+        matchScore, 
+        technicalQuestions, 
+        behavioralQuestions, 
+        skillGaps, 
+        preparationPlan, 
+        projectIdeas,
+        aiModel
+    } = reportData;
+
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+            
+            body {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                line-height: 1.6;
+                color: #1a202c;
+                margin: 0;
+                padding: 40px;
+                background-color: #ffffff;
+            }
+
+            .header {
+                border-bottom: 2px solid #6c5ce7;
+                padding-bottom: 20px;
+                margin-bottom: 30px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .header-info h1 {
+                margin: 0;
+                color: #2d3748;
+                font-size: 24px;
+                letter-spacing: -0.02em;
+            }
+
+            .header-info p {
+                margin: 5px 0 0;
+                color: #718096;
+                font-size: 14px;
+            }
+
+            .match-score {
+                background: #f7fafc;
+                border: 1px solid #e2e8f0;
+                border-left: 5px solid #6c5ce7;
+                padding: 15px 20px;
+                border-radius: 8px;
+                margin-bottom: 30px;
+            }
+
+            .match-score h2 {
+                margin: 0;
+                font-size: 18px;
+                color: #4a5568;
+            }
+
+            .score-value {
+                font-size: 32px;
+                font-weight: 700;
+                color: #6c5ce7;
+            }
+
+            .section {
+                margin-bottom: 40px;
+                page-break-inside: avoid;
+            }
+
+            .section-title {
+                font-size: 20px;
+                font-weight: 700;
+                color: #2d3748;
+                border-bottom: 1px solid #edf2f7;
+                padding-bottom: 10px;
+                margin-bottom: 20px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            .card {
+                background: #fff;
+                border: 1px solid #edf2f7;
+                padding: 15px;
+                margin-bottom: 15px;
+                border-radius: 6px;
+            }
+
+            .card h3 {
+                margin-top: 0;
+                font-size: 16px;
+                color: #2d3748;
+            }
+
+            .label {
+                font-weight: 600;
+                color: #4a5568;
+                font-size: 13px;
+                display: block;
+                margin-bottom: 4px;
+                text-transform: uppercase;
+            }
+
+            .content {
+                color: #4a5568;
+                font-size: 14px;
+                margin-bottom: 12px;
+            }
+
+            .severity {
+                display: inline-block;
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+
+            .severity-high { background: #fff5f5; color: #c53030; }
+            .severity-medium { background: #fffaf0; color: #975a16; }
+            .severity-low { background: #f0fff4; color: #276749; }
+
+            .tag {
+                display: inline-block;
+                background: #ebf4ff;
+                color: #2b6cb0;
+                padding: 4px 10px;
+                border-radius: 9999px;
+                font-size: 12px;
+                margin-right: 5px;
+                margin-bottom: 5px;
+            }
+
+            .footer {
+                margin-top: 50px;
+                text-align: center;
+                font-size: 12px;
+                color: #a0aec0;
+                border-top: 1px solid #edf2f7;
+                padding-top: 20px;
+            }
+
+            @media print {
+                .section { page-break-inside: avoid; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <div class="header-info">
+                <h1>Interview Preparation Report</h1>
+                <p>Position: <strong>${title}</strong></p>
+                <p>AI Agent: ${aiModel || 'Primary AI'}</p>
+            </div>
+            <div class="score-container" style="text-align: right;">
+                <div class="score-value">${matchScore}%</div>
+                <div style="font-size: 12px; color: #718096; font-weight: 600;">MATCH SCORE</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Critical Skill Gaps</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                ${skillGaps?.map(gap => `
+                    <div class="card" style="flex: 1; min-width: 200px;">
+                        <span class="label">Skill</span>
+                        <div class="content"><strong>${gap.skill}</strong></div>
+                        <span class="severity severity-${gap.severity?.toLowerCase()}">${gap.severity} Priority</span>
+                    </div>
+                `).join('') || '<p>No skill gaps identified.</p>'}
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Technical Interview Questions</div>
+            ${technicalQuestions?.map((q, i) => `
+                <div class="card">
+                    <h3>${i+1}. ${q.question}</h3>
+                    <span class="label">Interviewer Intention</span>
+                    <div class="content">${q.intention}</div>
+                    <span class="label">Model Answer</span>
+                    <div class="content">${q.answer}</div>
+                </div>
+            `).join('') || '<p>No technical questions generated.</p>'}
+        </div>
+
+        <div class="section">
+            <div class="section-title">Behavioral Interview Questions</div>
+            ${behavioralQuestions?.map((q, i) => `
+                <div class="card">
+                    <h3>${i+1}. ${q.question}</h3>
+                    <span class="label">Candidate Story Focus</span>
+                    <div class="content">${q.intention}</div>
+                    <span class="label">Model Answer (STAR Method)</span>
+                    <div class="content">${q.answer}</div>
+                </div>
+            `).join('') || '<p>No behavioral questions generated.</p>'}
+        </div>
+
+        <div class="section">
+            <div class="section-title">Preparation Battle Plan</div>
+            ${preparationPlan?.map(day => `
+                <div class="card">
+                    <span class="label">Day ${day.day}</span>
+                    <div class="content"><strong>Focus: ${day.focus}</strong></div>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #4a5568;">
+                        ${day.tasks?.map(task => `<li>${task}</li>`).join('')}
+                    </ul>
+                </div>
+            `).join('') || '<p>No plan available.</p>'}
+        </div>
+
+        ${projectIdeas?.length > 0 ? `
+        <div class="section">
+            <div class="section-title">Portfolio Project Ideas</div>
+            ${projectIdeas.map(project => `
+                <div class="card">
+                    <h3>${project.title}</h3>
+                    <div class="content" style="margin-bottom: 8px;">${project.description}</div>
+                    <span class="label">Tech Stack</span>
+                    <div style="margin-bottom: 10px;">
+                        ${project.techStack?.map(tech => `<span class="tag">${tech}</span>`).join('')}
+                    </div>
+                    <span class="label">Key Features</span>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #4a5568;">
+                        ${project.keyFeatures?.map(feat => `<li>${feat}</li>`).join('')}
+                    </ul>
+                </div>
+            `).join('')}
+        </div>
+        ` : ''}
+
+        <div class="footer">
+            Generated by InterviewGenie AI &mdash; Ready to crush your next interview.
+        </div>
+    </body>
+    </html>
+    `;
+
+    return await convertHTMLToPDF(htmlContent);
+}
+
 
 module.exports = {
     generateInterviewReport,
     generateResumePDF,
     convertHTMLToPDF,
     generateProjectIdeas,
-    validateInputs
+    validateInputs,
+    generateFullReportPDF
 }

@@ -4,7 +4,7 @@
 .interview-page {
   position: relative;
   width: 100%;
-  max-width: 1600px;
+  // max-width: 1600px;
   margin: 0 auto;
   min-height: 100vh;
   background: linear-gradient(160deg, #0f0e0c 0%, #171613 40%, #1a1814 100%);
@@ -124,6 +124,40 @@
     color: #f08070;
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(224, 112, 96, 0.10);
+  }
+}
+
+.topbar-download-report {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid rgba(0, 206, 201, 0.28);
+  border-radius: 0.875rem;
+  background: rgba(0, 206, 201, 0.08);
+  color: #00cec9;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.24s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  box-shadow: 0 4px 12px rgba(0, 206, 201, 0.05);
+
+  .btn-icon { font-size: 1rem; }
+
+  &:hover:not(:disabled) {
+    border-color: rgba(0, 206, 201, 0.55);
+    background: rgba(0, 206, 201, 0.12);
+    color: #74ebd5;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 206, 201, 0.15);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }
 
@@ -326,6 +360,17 @@
       border-color: rgba(200, 120, 58, 0.40);
       background: rgba(200, 120, 58, 0.08);
       color: #f0a040;
+    }
+  }
+
+  &--download-report {
+    border-color: rgba(0, 206, 201, 0.18);
+    color: #00cec9;
+
+    &:hover {
+      border-color: rgba(0, 206, 201, 0.40);
+      background: rgba(0, 206, 201, 0.08);
+      color: #74ebd5;
     }
   }
 }
@@ -544,12 +589,14 @@
 
 .question-detail {
   margin-left: 3.5rem;
+  width: calc(100% - 3.5rem);
 
   p {
     margin: 0.75rem 0 0;
     line-height: 1.75;
     color: #a8a090;
     font-size: 0.9rem;
+    max-width: 100%;
 
     strong {
       color: #f0a040;
@@ -569,6 +616,7 @@
       border-left: 3px solid #d4821a;
       border-radius: 0 0.75rem 0.75rem 0;
       margin-top: 1rem;
+      width: 100%;
     }
   }
 }
@@ -1403,12 +1451,12 @@
   }
 
   p {
-    max-width: 500px;
     color: #a8a090;
     line-height: 1.6;
     margin: 0;
+    max-width: none;
   }
-}
+} // Properly closing .legacy-analysis-notice
 
 .perfect-match-state {
   display: flex;
@@ -1428,6 +1476,7 @@
     color: #5ecba1;
     margin: 0;
     line-height: 1.5;
+    max-width: none;
   }
 }
 

@@ -12,7 +12,7 @@ const Interview = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { interviewId } = useParams()
   const navigate = useNavigate()
-  const { report, loading, pdfLoading, error, setError, getReportByID, getResumePDF, getProjectIdeasForReport } = useInterview()
+  const { report, loading, pdfLoading, error, setError, getReportByID, getResumePDF, getProjectIdeasForReport, getFullReportPDF } = useInterview()
   const { handleLogout, user } = useAuth()
 
   const [showDownloadModal, setShowDownloadModal] = useState(false)
@@ -415,7 +415,7 @@ const Interview = () => {
         setShowDownloadModal(true);
         setIsMobileMenuOpen(false);
       }}>
-        <span className="nav-icon">📥</span>
+        <span className="nav-icon">📄</span>
         Generate AI Improved Resume
       </button>
     </nav>
@@ -435,6 +435,12 @@ const Interview = () => {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Logout
           </button>
+          
+          <button className="topbar-download-report" onClick={() => getFullReportPDF(interviewId)} disabled={pdfLoading}>
+            <span className="btn-icon">📊</span>
+            Download Whole Report
+          </button>
+          
           <button 
             className={`mobile-menu-btn ${isMobileMenuOpen ? 'open' : ''}`}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -468,8 +474,8 @@ const Interview = () => {
               </svg>
               <span className="pdf-anim-icon">📄</span>
             </div>
-            <h3>Forging Your Resume...</h3>
-            <p>Our AI is crafting an industry-grade, ATS-optimized resume tailored to the job. Hang tight! 🔥</p>
+            <h3>Generating Document...</h3>
+            <p>Our AI is preparing your professional PDF. Hang tight! 🔥</p>
             <div className="pdf-progress-dots">
               <span></span><span></span><span></span>
             </div>

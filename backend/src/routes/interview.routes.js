@@ -10,4 +10,5 @@ interviewRouter.get("/:interviewId", authMiddleware.authUser, interview.getInter
 
 interviewRouter.post("/resume/pdf/:interviewId", authMiddleware.authUser, interview.generateResumePDFController)
 interviewRouter.post("/project-ideas/:interviewId", authMiddleware.authUser, interview.generateProjectIdeasController)
+interviewRouter.get("/full-report/pdf/:interviewId", authMiddleware.authUser, interview.downloadFullReportPDFController)
 module.exports = interviewRouter

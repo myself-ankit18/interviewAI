@@ -59,3 +59,10 @@ export const getProjectIdeas = async ({interviewId}) => {
         throw error;
     }
 };
+
+export const downloadFullReportPDF = async (interviewId) => {
+    const response = await api.get(`/api/interview/full-report/pdf/${interviewId}`, {
+        responseType: 'blob'
+    });
+    return response.data;
+};
