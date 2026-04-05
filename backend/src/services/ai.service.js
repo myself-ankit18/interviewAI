@@ -84,7 +84,7 @@ const interviewReportSchema = z.object({
 async function generateInterviewReport({resume, selfDescription, jobDescription, aiModel}){
     const jsonSchema = zodToJsonSchema(interviewReportSchema);
 
-    const prompt = `You are an elite technical interview coach who has prepared 500+ candidates for roles at Google, Amazon, Meta, Microsoft, and top startups. Analyze this candidate thoroughly and produce a comprehensive interview preparation report.
+    const prompt = `You are a high-level, industry-agnostic recruiting and interview expert. You have successfully placed thousands of candidates in roles across EVERY major sector (Engineering, Medicine, Finance, Creative, Legal, Administration, etc.). Analyze this candidate thoroughly and produce a comprehensive, industry-specific interview preparation report.
 
 === CANDIDATE PROFILE ===
 Resume:
@@ -108,8 +108,7 @@ Scoring methodology — evaluate each dimension separately, then compute weighte
 - Nice-to-Have Skills (15% weight): Bonus qualifications match
 
 IMPORTANT CALIBRATION:
-- A fresh graduate applying for a Senior role should score 25-45
-- Someone with 2 years React applying for a Senior Full-Stack role requiring 5+ years should score 45-60
+- A candidate matching 70% of JD required technical skills with the right experience level should score 65-75
 - Someone matching 70% of required skills with right experience level should score 65-75
 - Only candidates who match nearly ALL requirements should score 80+
 - 90+ is EXTREMELY rare — reserved for candidates who exceed all requirements
@@ -124,55 +123,32 @@ Question mix requirements:
 - 2-3 system design / architecture questions relevant to the role
 - 2-3 advanced questions (trade-offs, scalability, edge cases)
 
-Each object must have:
+Each object EXACTLY must have these properties:
 - question: Exact phrasing an interviewer would use (natural, conversational — NOT textbook-style)
 - intention: What the interviewer is REALLY evaluating (be specific, e.g., "Tests ability to reason about database indexing strategies under write-heavy workloads")
-- answer: COMPREHENSIVE model answer (200-400 words) including:
-  → Core concepts and definitions
-  → Concrete code snippets or architectural diagrams (described textually)
-  → Trade-offs between approaches (at least 2 alternatives discussed)
-  → Real-world production considerations
-  → Common pitfalls to avoid
-  → Follow-up topics to prepare for
+- answer: COMPREHENSIVE model answer (200-400 words) including trade-offs, code snippets, and common pitfalls.
 
 DO NOT generate generic textbook questions. Examples of BAD vs GOOD:
-- BAD: "What is REST API?" → GOOD: "You're building an API that needs to handle 10K requests/sec. Walk me through your design choices — REST vs GraphQL, pagination strategy, caching layers, and how you'd handle partial failures."
-- BAD: "Explain React hooks" → GOOD: "You notice a component re-renders 47 times when a user types in a search box. Walk me through how you'd diagnose this, what tools you'd use, and how you'd fix it."
+- BAD: "What are your strengths?" → GOOD: "Looking at the [Specific JD Requirement], walk me through a time you overcame a [Domain-Specific Challenge] using [Specific Tool/Methodology mentioned in JD]."
+- BAD: "Explain [Generic Concept]" → GOOD: "You're tasked with optimizing [Specific System/Process from JD] which is currently underperforming by [Metric]. Walk me through your diagnostic process, what tools or standards you'd apply, and how you'd validate the solution."
 
 **3. behavioralQuestions (array of 12+ objects)**
-Generate questions covering these competencies (at least one per competency):
-- Leadership & Ownership
-- Handling Conflict / Disagreements
-- Failure, Mistakes & Recovery
-- Working Under Pressure / Tight Deadlines
-- Cross-team Collaboration
-- Dealing with Ambiguity
-- Customer/User Focus
-- Technical Decision Making
-- Mentoring / Growing Others  
-- Prioritization & Trade-offs
-- Influence Without Authority
-- Innovation & Initiative
+Generate questions covering a wide range of competencies (Leadership, Failure, Conflict, Ownership, etc.).
 
-Each object must have:
+Each object MUST have these EXACT properties:
 - question: Natural conversational phrasing (not robotic)
 - intention: The specific leadership principle or competency being evaluated
-- answer: FULL STAR-method response (200-350 words) tailored to the candidate's resume:
-  → Situation: Specific context from their experience (realistic project name, team size, timeline, stakes)
-  → Task: Their PERSONAL responsibility (not what the team did)
-  → Action: 3-5 specific steps THEY took (with reasoning for each decision)
-  → Result: QUANTIFIED outcomes — metrics, percentages, business impact, team impact
-  → Reflection: What they learned and would do differently
+- answer: FULL STAR-method response (200-350 words) tailored to the candidate's resume (Situation, Task, Action, Result, Reflection).
 
 Make stories BELIEVABLE based on the candidate's actual resume content.
 
 **4. skillGaps (array of objects)**
-Identify every gap between the candidate's profile and the JD requirements:
-- Be SPECIFIC: "Kubernetes pod orchestration and Helm charts" not just "DevOps"
-- Severity criteria:
-  * High: Explicitly required in JD, candidate shows zero evidence → interview deal-breaker
-  * Medium: Required skill where candidate has partial/outdated/adjacent experience
-  * Low: Nice-to-have skill or minor gap that can be talked around in interview
+Identify every gap between the candidate's profile and the JD requirements.
+Each object MUST have these EXACT properties:
+- skill (string): Be SPECIFIC, e.g., "AutoCAD specialized layer management" not just "Design"
+- severity (string): Must be 'Low', 'Medium', or 'High' based on requirement importance.
+
+CRITICAL: ONLY list skills or tools that are explicitly mentioned or strongly implied by the specific Job Description provided. DO NOT include generic technical skills like "Kubernetes" or "React" unless they appear in the JD.
 
 **5. preparationPlan (array of 7-10 day objects)**
 Design a realistic daily study plan for a working professional (2-4 hours/day):
@@ -181,10 +157,10 @@ Design a realistic daily study plan for a working professional (2-4 hours/day):
   * day: number (1-10)
   * focus: Clear topic area (e.g., "System Design Fundamentals + Database Optimization")
   * tasks: Array of 3-5 SPECIFIC, actionable items. Examples:
-    - "Solve LeetCode #200 (Number of Islands) and #207 (Course Schedule) — practice BFS/DFS patterns, target 25 min each"
-    - "Design a URL shortener system: draw the architecture, estimate QPS, choose between SQL vs NoSQL with trade-off analysis"
+    - "Solve [Relevant Domain Problem/Exercise] focusing on [Specific JD Principle]"
+    - "Simulate [Workflow from JD]: write the process flow, identify potential bottlenecks, and suggest [Industry Standard] optimizations"
     - "Record yourself answering 3 behavioral questions using STAR method, review for filler words and vague statements"
-  AVOID generic tasks like "Study React" or "Practice coding"
+  AVOID generic tasks like "Study [Software]" or "Practice [Skill]"
 
 - Recommended day structure:
   * Days 1-3: Core technical foundations, close high-severity gaps
@@ -197,11 +173,11 @@ Extract the exact job title from the job description.
 
 **7. resumeAnalysis (object)**
 Perform a CRITICAL, RUTHLESS ATS-style keyword analysis. Imagine you are a senior hiring manager looking for reasons TO REJECT the candidate:
-- matchedKeywords: Detect EVERY technical skill, tool, framework, and industry-standard phrase from the JD that is EXPLICITLY present in the resume. Return the EXACT string as it appears in the resume. If the resume is for a completely different career (e.g., plumber applying for Dev role), this MUST be an empty array.
-- missingKeywords: Identify the 15+ MOST CRITICAL technical skills, certifications, or requirements from the JD that are COMPLETELY ABSENT from the candidate's profile. If the matchScore is below 60, this array MUST contain at least 12 high-priority keywords.
-- BE SPECIFIC: Use "Kubernetes Architecture", "React Hooks", "Babel & Webpack", not just "DevOps".
+- matchedKeywords: Detect EVERY technical skill, tool, certification, and industry-standard phrase from the JD that is EXPLICITLY present in the resume. Return the EXACT string as it appears in the resume. 
+- missingKeywords: Identify the 15+ MOST CRITICAL technical skills, softwares, or requirements from the JD that are COMPLETELY ABSENT from the candidate's profile. 
+- BE SPECIFIC: Use "[Specific Software/Standard Name]", not just "[Generic Category]".
 - DO NOT hallucinate matches. If it's not in the resume, it's MISSING.
-- DO NOT return empty arrays for 'missingKeywords' unless the candidate is a 100% perfect match.
+- DO NOT return generic tech keywords (e.g., "Kubernetes", "React", "Unit Testing") unless they are EXPLICITLY required by the Job Description provided.
 
 === OUTPUT FORMAT ===
 Respond with ONLY valid JSON matching this schema. No markdown, no code blocks, just raw JSON.
@@ -238,9 +214,9 @@ async function generateResumePDF({resume, selfDescription, jobDescription, aiMod
         html: z.string().describe("Complete HTML resume document with inline CSS styling, ready for PDF conversion.")
     });
     
-    const prompt = `You are a senior professional resume writer with 15+ years of experience placing candidates at FAANG, Fortune 500, and top-tier companies. Your resumes have a 90%+ interview callback rate.
+    const prompt = `You are a world-class professional resume writer with 15+ years of experience placing candidates at top-tier firms across all industries (FAANG, Fortune 500, Healthcare, Engineering Firms, Creative Agencies, etc.).
 
-Generate a COMPLETE, INDUSTRY-GRADE resume in HTML format. Your PRIMARY job is to REWRITE and ENHANCE the text content to be professional, compelling, and ATS-optimized — the description details remain factually the same, but every sentence must be rewritten to industry standards.
+Generate a COMPLETE, INDUSTRY-GRADE resume in HTML format. Your PRIMARY job is to REWRITE and ENHANCE the text content to be professional, compelling, and ATS-optimized for the SPECIFIC target role — the description details remain factually the same, but every sentence must be rewritten to the highest standards of the [Relevant Industry].
 
 === SOURCE INFORMATION ===
 Resume: ${resume}
@@ -255,7 +231,7 @@ Target Job Description: ${jobDescription}
 - Write a punchy, results-driven summary tailored to the TARGET job
 - Include years of experience, key domain expertise, and 2-3 signature achievements
 - Use industry keywords from the job description naturally
-- Example tone: "Results-driven Software Engineer with 4+ years of experience building scalable distributed systems serving 10M+ users. Expertise in React, Node.js, and AWS with a track record of reducing system latency by 40% and improving deployment frequency by 3x."
+- Example tone: "Senior [Role] with 10+ years of experience driving [Key Outcome] in [Industry]. Expertise in [Core Skill 1] and [Core Skill 2] with a track record of [Specific Achievement measured by Metric]."
 
 **Experience Section — REWRITE EVERY BULLET POINT:**
 - Start EVERY bullet with a STRONG action verb (Architected, Spearheaded, Orchestrated, Engineered, Optimized, Streamlined, Pioneered, Implemented, Delivered, Reduced, Accelerated, Automated, Scaled, Led, Drove, Transformed)
@@ -342,7 +318,7 @@ async function convertHTMLToPDF(htmlContent){
     return pdf;
 }
 
-async function generateProjectIdeas({skillGaps, jobDescription}){
+async function generateProjectIdeas({skillGaps, jobDescription, aiModel}){
     const projectIdeasSchema = z.object({
         projects: z.array(z.object({
             title: z.string().describe("A catchy, portfolio-ready project title"),
@@ -397,7 +373,7 @@ Respond with valid JSON matching this schema:
 ${JSON.stringify(zodToJsonSchema(projectIdeasSchema), null, 2)}`;
 
     const response = await ai.chat.completions.create({
-        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        model: aiModel || "meta-llama/llama-4-scout-17b-16e-instruct",
         messages: [{
             role: "system",
             content: "You are a senior engineering hiring manager. You suggest impressive, practical portfolio projects that help candidates close their skill gaps. Respond with valid JSON only. NEVER omit any fields from the requested schema."

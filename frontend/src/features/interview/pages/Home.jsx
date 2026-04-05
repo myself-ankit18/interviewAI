@@ -12,8 +12,8 @@ const Home = () => {
     const [selfDescription, setSelfDescription] = useState('')
     const [selectedFile, setSelectedFile] = useState(null)
     const [selectedModel, setSelectedModel] = useState('meta-llama/llama-4-scout-17b-16e-instruct')
-    const [unavailableModels, setUnavailableModels] = useState([])
     const [validationModal, setValidationModal] = useState({ open: false, reason: '' })
+    const [modelErrorModal, setModelErrorModal] = useState({ open: false })
     const [searchQuery, setSearchQuery] = useState('')
     const [entriesToShow, setEntriesToShow] = useState('All')
     const resumeInputRef = useRef(null)
@@ -26,7 +26,12 @@ const Home = () => {
     const handleGenerateReport = async (e) => {
         e.preventDefault()
         const resumeFile = resumeInputRef.current.files[0]
-        const data = await generateReport({resume: resumeFile, selfDescription, jobDescription, aiModel: selectedModel})
+        const data = await generateReport({
+            resume: resumeFile, 
+            selfDescription, 
+            jobDescription, 
+            aiModel: selectedModel
+        })
         
         if (data && data.isValidationError) {
             setValidationModal({ open: true, reason: data.reason })
@@ -36,9 +41,7 @@ const Home = () => {
         if (data && data._id) {
             navigate(`/interview/${data._id}`)
         } else if (data === null) {
-            if (!unavailableModels.includes(selectedModel)) {
-                setUnavailableModels(prev => [...prev, selectedModel])
-            }
+            setModelErrorModal({ open: true })
         }
     }
 
@@ -68,6 +71,21 @@ const Home = () => {
             <div className="modal-reason">{validationModal.reason}</div>
             <button className="modal-close-btn" onClick={() => setValidationModal({ open: false, reason: '' })}>
               Got it, let me fix it
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Model Error Modal */}
+      {modelErrorModal.open && (
+        <div className="validation-modal-overlay">
+          <div className="validation-modal model-error-variant">
+            <div className="modal-icon">🌩️</div>
+            <h3>Model Not Available</h3>
+            <p>Static on the line! This model is temporarily unreachable (likely rate-limited or over-capacity).</p>
+            <div className="modal-reason secondary">Try another model from the dropdown or wait a few minutes.</div>
+            <button className="modal-close-btn" onClick={() => setModelErrorModal({ open: false })}>
+              Roger that, I'll switch
             </button>
           </div>
         </div>
@@ -197,18 +215,14 @@ const Home = () => {
                   onChange={(e) => setSelectedModel(e.target.value)}
                   className="model-select"
                 >
-                  {availableModels.map((model) => {
-                    const isUnavailable = unavailableModels.includes(model.id);
-                    return (
+                  {availableModels.map((model) => (
                       <option 
                         key={model.id} 
                         value={model.id} 
-                        disabled={isUnavailable}
                       >
-                        {model.recommended ? '⭐ ' : ''}{model.name} {model.developer ? `(${model.developer})` : ''} {isUnavailable ? '- Unavailable / Out of Credits' : ''}
+                        {model.recommended ? '⭐ ' : ''}{model.name} {model.developer ? `(${model.developer})` : ''}
                       </option>
-                    )
-                  })}
+                  ))}
                 </select>
               </div>
             </div>

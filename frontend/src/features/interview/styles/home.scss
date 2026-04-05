@@ -909,6 +909,12 @@ tr:hover .table-view-link { color: var(--accent); }
     line-height: 1.6;
     margin-bottom: 2rem;
     text-align: left;
+
+    &.secondary {
+      background: rgba(0, 206, 201, 0.05);
+      border-color: rgba(0, 206, 201, 0.2);
+      color: var(--accent);
+    }
   }
 
   .modal-close-btn {
@@ -927,6 +933,11 @@ tr:hover .table-view-link { color: var(--accent); }
       background: var(--accent);
       color: var(--paper);
     }
+  }
+
+  &.model-error-variant {
+    border-color: var(--accent);
+    box-shadow: 0 24px 60px rgba(0, 206, 201, 0.15);
   }
 }
 

@@ -36,6 +36,21 @@ async function generateInterviewReportController(req, res) {
             ? jobDescription.substring(0, 50) + '...'
             : jobDescription
 
+        const aiResponse = JSON.parse(interviewReportbyAI);
+        
+        // --- Sanitize AI Data ---
+        // Ensure skillGaps have 'skill' property (AI sometimes uses 'name', 'gap', etc.)
+        if (Array.isArray(aiResponse.skillGaps)) {
+            aiResponse.skillGaps = aiResponse.skillGaps.map(g => ({
+                skill: g.skill || g.name || g.gap || g.skillName || g.topic || "Technical Skill",
+                severity: g.severity || "Medium"
+            }));
+        }
+
+        // Ensure other mandatory arrays exist
+        if (!Array.isArray(aiResponse.technicalQuestions)) aiResponse.technicalQuestions = [];
+        if (!Array.isArray(aiResponse.behavioralQuestions)) aiResponse.behavioralQuestions = [];
+        
         const interviewReport = await interviewReportModel.create({
             user: req.user.id,
             resume: resumeContent,
@@ -43,7 +58,7 @@ async function generateInterviewReportController(req, res) {
             jobDescription,
             title,
             aiModel: aiModel || 'meta-llama/llama-4-scout-17b-16e-instruct',
-            ...JSON.parse(interviewReportbyAI)
+            ...aiResponse
         })
         return res.status(201).json({
             success: true,
@@ -134,7 +149,8 @@ async function generateProjectIdeasController(req, res) {
     try {
         const projectIdeasRaw = await generateProjectIdeas({
             skillGaps,
-            jobDescription: interviewReport.jobDescription
+            jobDescription: interviewReport.jobDescription,
+            aiModel: interviewReport.aiModel
         });
         parsedProjectIdeas = JSON.parse(projectIdeasRaw);
     } catch (err) {
