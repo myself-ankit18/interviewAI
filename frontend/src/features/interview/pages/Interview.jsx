@@ -213,6 +213,84 @@ const Interview = () => {
           </div>
         </div>
       )
+    } else if (activeTab === 'analysis') {
+      const highlightText = (text, matches) => {
+        if (!matches || matches.length === 0) return text;
+        
+        // Escape special characters and join with OR, but match whole phrases/words
+        const pattern = matches
+          .map(m => m.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'))
+          .sort((a, b) => b.length - a.length) // Match longer phrases first
+          .join('|');
+          
+        const regex = new RegExp(`(${pattern})`, 'gi');
+        const parts = text.split(regex);
+
+        return parts.map((part, i) => 
+          regex.test(part) ? <mark key={i} className="highlight-match">{part}</mark> : part
+        );
+      };
+
+      if (!report.resumeAnalysis) {
+        return (
+          <div className="content-section">
+            <h2>🔍 Resume Strategic Analysis</h2>
+            <div className="legacy-analysis-notice">
+              <div className="notice-icon">📜</div>
+              <h3>Legacy Report Detected</h3>
+              <p>This report was generated before the Resume Heatmap feature was activated. Create a new report to see a detailed keyword match analysis and ATS-style highlighting!</p>
+              <button className="home-submit-btn" onClick={() => navigate('/')} style={{marginTop: '1.5rem', padding: '0.8rem 2rem'}}>
+                <span>New Strategy Session</span>
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="content-section">
+          <h2>🔍 Resume Strategic Analysis</h2>
+          <p className="section-subtitle">A deep dive into your profile's alignment with the role using ATS-style keyword heuristics</p>
+
+          <div className="resume-heatmap-container">
+            <div className="heatmap-main">
+              <div className="heatmap-resume-display">
+                {highlightText(report.resume, report.resumeAnalysis?.matchedKeywords)}
+              </div>
+            </div>
+
+            <div className="heatmap-sidebar">
+              <div className="heatmap-legend">
+                <h4>Legend</h4>
+                <div className="legend-item">
+                  <span className="dot dot-match"></span>
+                  <span>Direct Keyword Match</span>
+                </div>
+                <div className="legend-item">
+                  <span className="dot dot-missing"></span>
+                  <span>Missing Requirement</span>
+                </div>
+              </div>
+
+              <div className="missing-keywords-card">
+                <h4>⚠️ Missing Critical Keywords</h4>
+                {report.resumeAnalysis.missingKeywords?.length > 0 ? (
+                  <div className="keyword-gaps">
+                    {report.resumeAnalysis.missingKeywords.map((kw, i) => (
+                      <span key={i} className="keyword-gap-tag">{kw}</span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="perfect-match-state">
+                    <span className="perfect-icon">✨</span>
+                    <p>No critical gaps found! Your resume alignment is exceptional for this role.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
     } else if (activeTab === 'projects') {
       return (
         <div className="content-section">
@@ -326,12 +404,19 @@ const Interview = () => {
         <span className="nav-icon">🚀</span>
         Project Ideas
       </button>
+      <button
+        className={`nav-item ${activeTab === 'analysis' ? 'active' : ''}`}
+        onClick={() => handleTabChange('analysis')}
+      >
+        <span className="nav-icon">🔍</span>
+        Resume Analysis
+      </button>
       <button className="nav-item nav-item--download" onClick={()=>{
         setShowDownloadModal(true);
         setIsMobileMenuOpen(false);
       }}>
         <span className="nav-icon">📥</span>
-        Download Resume
+        Generate AI Improved Resume
       </button>
     </nav>
   )

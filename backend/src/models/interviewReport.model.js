@@ -109,6 +109,10 @@ const interviewReportSchema = new mongoose.Schema({
     aiModel: {
         type: String,
         default: 'meta-llama/llama-4-scout-17b-16e-instruct'
+    },
+    resumeAnalysis: {
+        matchedKeywords: [{ type: String }],
+        missingKeywords: [{ type: String }]
     }
 
 }, {

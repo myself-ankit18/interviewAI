@@ -74,7 +74,11 @@ const interviewReportSchema = z.object({
         focus: z.string().describe("The main focus for the day, such as a specific topic, skill, or type of question to practice."),
         tasks: z.array(z.string()).describe("A list of specific tasks or activities that the candidate should complete on this day to prepare for the interview.")
     })).describe("A detailed preparation plan for the candidate, outlining what they should focus on and do each day leading up to the interview."),
-    title: z.string().describe("The title of the job position that the candidate is applying for, which can be used to tailor the interview report and preparation plan to the specific role.")
+    title: z.string().describe("The title of the job position that the candidate is applying for, which can be used to tailor the interview report and preparation plan to the specific role."),
+    resumeAnalysis: z.object({
+        matchedKeywords: z.array(z.string()).describe("EXACT keywords or short technical phrases found in the resume that match the job description."),
+        missingKeywords: z.array(z.string()).describe("Critical keywords or required technologies from the job description that are NOT found in the resume.")
+    }).describe("ATS-style keyword analysis for showing a heatmap of match vs gaps.")
 })
 
 async function generateInterviewReport({resume, selfDescription, jobDescription, aiModel}){
@@ -191,12 +195,21 @@ Design a realistic daily study plan for a working professional (2-4 hours/day):
 **6. title (string)**
 Extract the exact job title from the job description.
 
+**7. resumeAnalysis (object)**
+Perform a CRITICAL, RUTHLESS ATS-style keyword analysis. Imagine you are a senior hiring manager looking for reasons TO REJECT the candidate:
+- matchedKeywords: Detect EVERY technical skill, tool, framework, and industry-standard phrase from the JD that is EXPLICITLY present in the resume. Return the EXACT string as it appears in the resume. If the resume is for a completely different career (e.g., plumber applying for Dev role), this MUST be an empty array.
+- missingKeywords: Identify the 15+ MOST CRITICAL technical skills, certifications, or requirements from the JD that are COMPLETELY ABSENT from the candidate's profile. If the matchScore is below 60, this array MUST contain at least 12 high-priority keywords.
+- BE SPECIFIC: Use "Kubernetes Architecture", "React Hooks", "Babel & Webpack", not just "DevOps".
+- DO NOT hallucinate matches. If it's not in the resume, it's MISSING.
+- DO NOT return empty arrays for 'missingKeywords' unless the candidate is a 100% perfect match.
+
 === OUTPUT FORMAT ===
-Respond with ONLY valid JSON matching this schema. No markdown, no code blocks, just raw JSON:
+Respond with ONLY valid JSON matching this schema. No markdown, no code blocks, just raw JSON.
+CRITICAL: ALL arrays (technicalQuestions, behavioralQuestions, skillGaps, preparationPlan, matchedKeywords, missingKeywords) MUST be populated. NO empty arrays allowed unless matchScore is 100% or 0% respectively.
 ${JSON.stringify(jsonSchema, null, 2)}
 
 CRITICAL REMINDERS:
-- matchScore must be an HONEST, PRECISE number (not 85, not 80, not 75 — use real analysis)
+- matchScore must be an HONEST, PRECISE number (high standard — no round numbers)
 - technicalQuestions and behavioralQuestions must EACH have at least 12 entries
 - Every answer must be 200+ words, detailed and actionable
 - preparationPlan must have 7-10 days with 3-5 specific tasks each
