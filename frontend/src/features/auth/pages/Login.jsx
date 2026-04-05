@@ -89,6 +89,13 @@ const Login = () => {
             required
           />
 
+          {/* FORGOT PASSWORD LINK: Navigates to the multi-step password reset page.
+              Positioned below the password field for easy discovery when a user
+              can't remember their credentials. */}
+          <div className="forgot-password-link">
+            <Link to="/forgot-password">Forgot your access key? 🔑</Link>
+          </div>
+
           <button type="submit" className="login-button">
             <span>Initialize Session 🚀</span>
           </button>

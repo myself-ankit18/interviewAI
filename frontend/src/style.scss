@@ -499,3 +499,444 @@ h1 {
 
   h1 { font-size: 1.6rem; }
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// NEW STYLES — Email Validation, Confirm Password & Forgot Password
+// ═══════════════════════════════════════════════════════════════════
+
+// ─── Input Validation States ──────────────────────────────────────
+// Applied dynamically via className when user interacts with email
+// and confirm password fields. Provides immediate visual feedback.
+
+.input-with-indicator {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  input {
+    flex: 1;
+    padding-right: 2.5rem; // Make room for the ✓/✗ indicator
+  }
+}
+
+// VALIDATION INDICATOR (✓ or ✗): Absolutely positioned inside the input field.
+// Uses CSS transforms for a subtle pop-in animation when it appears.
+.field-indicator {
+  position: absolute;
+  right: 0.85rem;
+  font-size: 1rem;
+  font-weight: 700;
+  pointer-events: none;
+  animation: indicator-pop 0.25s var(--spring);
+
+  &.valid {
+    color: var(--success); // Green checkmark for valid input
+  }
+  &.invalid {
+    color: var(--danger); // Red cross for invalid input
+  }
+}
+
+@keyframes indicator-pop {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+// INPUT BORDER COLORS: Override default border when validation state is known.
+// Green left border = valid, red left border = invalid.
+.login-form input.input-valid {
+  border-color: rgba(94, 203, 161, 0.4);
+  border-left: 3px solid var(--success);
+}
+
+.login-form input.input-invalid {
+  border-color: rgba(224, 112, 96, 0.4);
+  border-left: 3px solid var(--danger);
+}
+
+// ─── Inline Error Messages ────────────────────────────────────────
+// Small red text that appears directly below invalid fields.
+// Slides in from above with a subtle animation.
+.field-error-msg {
+  margin: 0.35rem 0 0 0.15rem;
+  font-size: 0.72rem;
+  color: var(--danger);
+  font-family: var(--font-mono);
+  letter-spacing: 0.03em;
+  animation: slide-in-error 0.2s ease-out;
+}
+
+@keyframes slide-in-error {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ─── Form Error & Success Banners ─────────────────────────────────
+// Full-width banners that appear at the top of forms for API errors
+// and success messages. Styled as glassmorphic cards.
+.form-error {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.6rem;
+  background: rgba(224, 112, 96, 0.08);
+  border: 1px solid rgba(224, 112, 96, 0.25);
+  animation: slide-in-error 0.3s ease-out;
+
+  span { font-size: 1rem; }
+  p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--danger);
+    font-family: var(--font-mono);
+    line-height: 1.5;
+  }
+}
+
+.form-success {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.6rem;
+  background: rgba(94, 203, 161, 0.08);
+  border: 1px solid rgba(94, 203, 161, 0.25);
+  animation: slide-in-error 0.3s ease-out;
+
+  span { font-size: 1rem; }
+  p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--success);
+    font-family: var(--font-mono);
+    line-height: 1.5;
+  }
+}
+
+// On desktop grid layout, messages span both columns of the card
+.fp-message {
+  @media (min-width: 1024px) {
+    grid-column: 1 / -1;
+  }
+}
+
+// ─── Forgot Password Link ────────────────────────────────────────
+// Appears on the Login page below the password field.
+// Subtle, right-aligned link that becomes brighter on hover.
+.forgot-password-link {
+  text-align: right;
+  margin-top: 0.65rem;
+
+  a {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-family: var(--font-mono);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    transition: color var(--transition);
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--accent-2);
+      transition: width 0.3s ease;
+    }
+
+    &:hover {
+      color: var(--accent-2);
+      &::after { width: 100%; }
+    }
+  }
+}
+
+// ─── Disabled Button State ────────────────────────────────────────
+// When validation fails, the submit button is disabled.
+// Visually muted to indicate it's not clickable.
+.login-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none; // Prevents hover effects on disabled state
+}
+
+// ─── Step Indicator (Forgot Password) ─────────────────────────────
+// Three numbered dots connected by lines, showing progress through
+// the 3-step password reset flow (Email → Verify → Reset).
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-top: 1.5rem;
+
+  @media (min-width: 1024px) {
+    justify-content: flex-start;
+  }
+}
+
+.step-dot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+
+  span {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    border: 2px solid var(--text-muted);
+    color: var(--text-muted);
+    background: transparent;
+    transition: all var(--transition);
+  }
+
+  p {
+    font-size: 0.62rem;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 0;
+    transition: color var(--transition);
+  }
+
+  // ACTIVE STATE: Current step — accent-colored border and text
+  &.active span {
+    border-color: var(--accent-1);
+    color: var(--accent-1);
+    background: rgba(212, 130, 26, 0.08);
+    box-shadow: 0 0 12px rgba(212, 130, 26, 0.15);
+  }
+  &.active p {
+    color: var(--accent-2);
+  }
+
+  // COMPLETED STATE: Past steps — filled with accent color
+  &.completed span {
+    background: var(--accent-1);
+    border-color: var(--accent-1);
+    color: #0f0e0c;
+  }
+}
+
+// Connecting line between step dots
+.step-line {
+  width: 40px;
+  height: 2px;
+  background: var(--text-muted);
+  margin: 0 0.25rem;
+  margin-bottom: 1.2rem; // Align with dot center (account for label below)
+  transition: background var(--transition);
+
+  &.active {
+    background: var(--accent-1);
+    box-shadow: 0 0 8px rgba(212, 130, 26, 0.2);
+  }
+}
+
+// ─── OTP Countdown Timer ──────────────────────────────────────────
+// Shows time remaining before the OTP expires.
+// Changes color as time runs out (amber → red).
+.otp-countdown {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  border-radius: 0.6rem;
+  background: rgba(240, 160, 64, 0.06);
+  border: 1px solid rgba(240, 160, 64, 0.18);
+  margin-bottom: 0.5rem;
+
+  .countdown-icon {
+    font-size: 1rem;
+  }
+
+  .countdown-text {
+    font-size: 0.78rem;
+    color: var(--accent-2);
+    font-family: var(--font-mono);
+    letter-spacing: 0.03em;
+
+    strong {
+      color: var(--accent-1);
+      font-weight: 700;
+    }
+  }
+
+  // EXPIRED STATE: Red styling to indicate OTP is no longer valid
+  &.expired {
+    background: rgba(224, 112, 96, 0.06);
+    border-color: rgba(224, 112, 96, 0.18);
+
+    .countdown-text {
+      color: var(--danger);
+    }
+  }
+}
+
+// ─── Resend OTP ───────────────────────────────────────────────────
+.resend-otp-text {
+  margin-top: 1rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  text-align: center;
+}
+
+.resend-cooldown {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+// RESEND OTP BUTTON: Styled as an inline text button (no border/background).
+// Becomes visible only after the 30-second cooldown expires.
+.resend-otp-btn {
+  background: none;
+  border: none;
+  color: var(--accent-2);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--transition);
+  padding: 0;
+
+  &:hover {
+    color: var(--accent-3);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INLINE OTP VERIFICATION — Register Page
+// These styles power the seamless, button-free email verification UX
+// ═══════════════════════════════════════════════════════════════════
+
+// ─── OTP Inline Section ───────────────────────────────────────────
+// The entire OTP block slides in from above when OTP is sent.
+// Uses a combination of translateY and opacity for a smooth entrance.
+.otp-inline-section {
+  animation: otp-slide-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  padding: 1rem;
+  margin-top: 0.75rem;
+  border-radius: 0.75rem;
+  background: rgba(212, 130, 26, 0.04);
+  border: 1px solid rgba(212, 130, 26, 0.12);
+}
+
+@keyframes otp-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 300px;
+  }
+}
+
+// ─── OTP Input Field ──────────────────────────────────────────────
+.otp-inline-input {
+  letter-spacing: 0.5em !important;
+  text-align: center !important;
+  font-size: 1.3rem !important;
+  font-family: var(--font-mono) !important;
+}
+
+// ─── OTP Status Messages ──────────────────────────────────────────
+// Inline success/error messages that appear below the OTP field.
+// Compact design that fits within the OTP section.
+.otp-status-msg {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.5rem;
+  animation: slide-in-error 0.25s ease-out;
+
+  &.success {
+    color: var(--success);
+  }
+  &.error {
+    color: var(--danger);
+  }
+}
+
+// ─── Sending Indicator ────────────────────────────────────────────
+// Small inline text that appears next to the label while OTP is being sent
+// or verified. Provides immediate feedback that something is happening.
+.sending-indicator {
+  margin-left: 0.5rem;
+  font-size: 0.65rem;
+  color: var(--accent-2);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  animation: pulse-glow 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+// ─── Verified Input ───────────────────────────────────────────────
+// When email is verified, the field gets a special green glow + locked state.
+.login-form input.input-verified {
+  border-color: rgba(94, 203, 161, 0.5) !important;
+  border-left: 3px solid var(--success) !important;
+  background: rgba(94, 203, 161, 0.04) !important;
+  cursor: not-allowed;
+}
+
+// ─── Locked Fields (Before Email Verification) ───────────────────
+// Username, Password, and Confirm Password fields are dimmed and disabled
+// until the user verifies their email via OTP. This visual state clearly
+// communicates "verify your email first" without needing explicit text.
+.fields-locked {
+  opacity: 0.35;
+  pointer-events: none;
+  filter: grayscale(0.5);
+  transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+
+  input {
+    cursor: not-allowed;
+  }
+}
+
+// ─── Unlocked Fields (After Email Verification) ──────────────────
+// Smooth transition from dimmed to active state. The fields "come alive"
+// with a subtle scale-up and opacity change.
+.fields-unlocked {
+  opacity: 1;
+  pointer-events: auto;
+  filter: none;
+  transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: fields-activate 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fields-activate {
+  from {
+    opacity: 0.35;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
