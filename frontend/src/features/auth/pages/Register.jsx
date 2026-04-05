@@ -126,7 +126,7 @@ const Register = () => {
             setOtpStatusMsg("OTP sent to your email! Check your inbox ✉️");
             setResendCooldown(30); // Start 30s cooldown for resend
         } catch (error) {
-            setOtpError(typeof error === 'string' ? error : 'Failed to send OTP.');
+            setErrorMsg(typeof error === 'string' ? error : 'Failed to send OTP.'); // Use main error banner
             setOtpSent(false);
         } finally {
             setOtpSending(false);

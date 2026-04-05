@@ -524,24 +524,24 @@
 }
 
 // ─── Error Message ────────────────────────────────────────────────
-.form-error {
+.home-form-card .form-error {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem 1.25rem;
   background: #fdf0ee;
-  border-left: 3px solid var(--accent);
   border: 1px solid rgba(192, 57, 43, 0.2);
-  border-left: 3px solid var(--accent);
+  border-left: 4px solid #c0392b;
 
   span { font-size: 1rem; flex-shrink: 0; }
 
   p {
     margin: 0;
-    color: var(--accent-muted);
+    color: #c0392b;
     font-size: 0.85rem;
     line-height: 1.55;
     font-family: 'Syne', sans-serif;
+    font-weight: 600;
   }
 }
 
