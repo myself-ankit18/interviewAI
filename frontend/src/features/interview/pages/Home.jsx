@@ -188,16 +188,14 @@ const Home = () => {
             <div className="form-group">
               <label htmlFor="selfDescription">
                 <span className="label-icon">🙋</span>
-                Tell Us About Yourself
-                <span className="label-required">*</span>
+                Tell Us About Yourself (Optional)
               </label>
               <textarea
                 id="selfDescription"
                 name="selfDescription"
                 rows={4}
-                placeholder="Brag a little! Your experience, skills, career goals... We're all ears 👂"
+                placeholder="Brag a little! Your experience, skills, career goals... (Optional) 👂"
                 onChange={(e) => setSelfDescription(e.target.value)}
-                required
               />
             </div>
 

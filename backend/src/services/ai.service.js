@@ -91,7 +91,7 @@ Resume:
 ${resume}
 
 Self-Description:
-${selfDescription}
+${selfDescription || '[EMPTY]'}
 
 Target Job Description:
 ${jobDescription}
@@ -221,7 +221,7 @@ Generate a COMPLETE, INDUSTRY-GRADE resume in HTML format. Your PRIMARY job is t
 === SOURCE INFORMATION ===
 Resume: ${resume}
 
-Self-description: ${selfDescription}
+Self-description: ${selfDescription || '[EMPTY]'}
 
 Target Job Description: ${jobDescription}
 
@@ -396,7 +396,7 @@ async function validateInputs({resume, selfDescription, jobDescription, aiModel}
         reason: z.string().describe("If isValid is false, a brief explanation of which field failed and why.")
     });
 
-    const prompt = `You are an EXTREMELY STRICT input validation gatekeeper for an AI interview preparation tool. Your job is to REJECT bad inputs.
+    const prompt = `You are a FAIR and CONTEXT-AWARE input validator for an AI interview preparation tool. Your job is to catch genuinely invalid or spam inputs while ALLOWING real user data through — even if it's messy.
 
 === INPUTS TO VALIDATE ===
 
@@ -415,30 +415,29 @@ FIELD 3 - Job Description (user typed):
 ${jobDescription && jobDescription.trim().length > 0 ? jobDescription : '[EMPTY]'}
 """
 
-=== STRICT VALIDATION RULES ===
+=== VALIDATION RULES ===
 
-You MUST return isValid: false if ANY of the following is true:
+You MUST return isValid: false ONLY if ANY of the following is clearly true:
 
-1. **Resume**: Must contain REAL resume content — work experience, education, skills, projects, or career summary. REJECT if it's:
-   - Random text, gibberish, lorem ipsum
-   - Unrelated content (stories, recipes, lyrics, jokes)
-   - Just a few random words or keyboard smash (e.g., "asdf", "test", "hello world")
-   - A completely blank/empty document
-   - Content that has nothing to do with a person's professional background
+1. **Resume**: Must look like it came from a real person's resume/CV. 
+   - ACCEPT if it contains ANY recognizable professional content: names, skills, job titles, education, projects, experience, etc.
+   - ACCEPT even if it has formatting issues, weird characters, broken layouts, or encoding artifacts — this is NORMAL for PDF-to-text extraction.
+   - ACCEPT even if there are typos or grammatical errors — real resumes often have these.
+   - ACCEPT even if the resume content does NOT match the job description — the user may be pivoting careers.
+   - REJECT ONLY if the content is clearly NOT a resume: pure gibberish, lorem ipsum, song lyrics, recipes, a novel, or a completely blank/empty document.
 
-2. **Self-Description**: Must be a person describing themselves professionally. REJECT if it's:
-   - Random characters or single words
-   - Completely unrelated to career/skills/experience
-   - Offensive, spam, or trolling content
-   - Less than 10 meaningful words
+2. **Self-Description**: This field is COMPLETELY OPTIONAL.
+   - ALWAYS ACCEPT if it's empty, blank, or '[EMPTY]'. Never mention it as a problem.
+   - If provided, only REJECT if it's clearly offensive, spam, or troll content (e.g., hate speech, random keyboard smashing like "asdfghjkl").
+   - Short descriptions are fine. Even a single sentence is acceptable.
 
-3. **Job Description**: Must describe an actual job role or position. REJECT if it's:
-   - Random characters or meaningless text
-   - Not describing an actual job (e.g., "make me a sandwich", "fly to the moon")
-   - Completely unrelated to employment/hiring (recipes, stories, etc.)
-   - Less than 15 meaningful words
+3. **Job Description**: Must look like it describes some kind of job, role, or position.
+   - ACCEPT if it contains ANY recognizable job-related content: role titles, responsibilities, requirements, qualifications, company info, etc.
+   - ACCEPT even if it's short, informal, or poorly formatted.
+   - ACCEPT even if it doesn't match the resume — users may be exploring new career paths.
+   - REJECT ONLY if the content is clearly NOT a job description: recipes, stories, jokes, gibberish, or completely empty.
 
-IMPORTANT: Be AGGRESSIVE about rejecting bad inputs. When in doubt, REJECT. It is better to wrongly reject than to waste expensive AI credits on garbage.
+IMPORTANT: When in doubt, ACCEPT. It is better to let a borderline input through than to block a real user. Only reject inputs that are genuinely spam, nonsensical, or harmful.
 
 Return JSON: { "isValid": boolean, "reason": string }`;
 
@@ -447,7 +446,7 @@ Return JSON: { "isValid": boolean, "reason": string }`;
             model: aiModel || "llama-3.1-8b-instant",
             messages: [{
                 role: "system",
-                content: "You are an extremely strict validation gatekeeper. You MUST reject any input that is not genuinely a resume, self-description, or job description. When in doubt, REJECT. Respond with valid JSON only."
+                content: "You are a fair input validator. Accept any input that looks like a real resume, job description, or professional content — even if messy or poorly formatted. Self-description is optional and can be empty. Only reject clearly spam, gibberish, or harmful content. When in doubt, ACCEPT. Respond with valid JSON only."
             }, {
                 role: "user",
                 content: prompt
