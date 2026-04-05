@@ -1,5 +1,5 @@
 import {getAllInterviewReports, getInterviewReportById, generateInterviewReport, generateResumePDF, getProjectIdeas as getProjectIdeasAPI, downloadFullReportPDF} from "../services/interview.api"
-import {useContext, useEffect, useState} from "react"
+import {useContext, useEffect, useRef, useState} from "react"
 import {InterviewContext} from "../interview.context.jsx"
 import {useParams} from "react-router"
 
@@ -10,6 +10,7 @@ export const useInterview = () => {
         throw new Error("useInterview must be used within an InterviewProvider");
     }
     const {loading, setLoading, pdfLoading, setPdfLoading, error, setError, report, setReport, reports, setReports} = context;
+    const abortControllerRef = useRef(null);
     const generateReport = async ({resume, selfDescription, jobDescription, aiModel}) => {
         setLoading(true)
         setError('')
@@ -65,9 +66,13 @@ export const useInterview = () => {
     const getResumePDF = async (interviewId, aiModel) => {
         setError('')
         setPdfLoading(true)
+        
+        if (abortControllerRef.current) abortControllerRef.current.abort();
+        abortControllerRef.current = new AbortController();
+
         let data = null
         try {
-                data = await generateResumePDF({interviewId, aiModel})
+                data = await generateResumePDF({interviewId, aiModel}, abortControllerRef.current.signal)
                 const url = window.URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
                 const link = document.createElement('a')
                 link.href = url
@@ -76,10 +81,15 @@ export const useInterview = () => {
                 link.click()
                 link.remove()
         } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('PDF generation cancelled by user');
+                return null;
+            }
             setError('Failed to generate resume PDF. Please try again.')
             console.error("Error generating resume PDF:", error)
         } finally {
             setPdfLoading(false)
+            abortControllerRef.current = null;
         }
         return data
     }
@@ -98,8 +108,12 @@ export const useInterview = () => {
     const getFullReportPDF = async (interviewId) => {
         setError('')
         setPdfLoading(true)
+
+        if (abortControllerRef.current) abortControllerRef.current.abort();
+        abortControllerRef.current = new AbortController();
+
         try {
-            const data = await downloadFullReportPDF(interviewId)
+            const data = await downloadFullReportPDF(interviewId, abortControllerRef.current.signal)
             const url = window.URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
             const link = document.createElement('a')
             link.href = url
@@ -108,10 +122,23 @@ export const useInterview = () => {
             link.click()
             link.remove()
         } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('Download cancelled by user');
+                return;
+            }
             setError('Failed to download full report PDF. Please try again.')
             console.error("Error downloading full report PDF:", error)
         } finally {
             setPdfLoading(false)
+            abortControllerRef.current = null;
+        }
+    }
+
+    const cancelPdfGeneration = () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            setPdfLoading(false);
+            abortControllerRef.current = null;
         }
     }
 
@@ -123,6 +150,6 @@ export const useInterview = () => {
         }
     }, [interviewId])
 
-    return {loading, pdfLoading, error, setError, report, reports, generateReport, getReportByID, getAllReports, getResumePDF, getProjectIdeasForReport, getFullReportPDF}
+    return {loading, pdfLoading, error, setError, report, reports, generateReport, getReportByID, getAllReports, getResumePDF, getProjectIdeasForReport, getFullReportPDF, cancelPdfGeneration}
 }
 

@@ -241,7 +241,7 @@
       h2 {
         margin: 0;
         font-family: 'Playfair Display', serif;
-        font-size: 1.2rem;
+        font-size: 1rem;
         font-weight: 700;
         color: #e8e2d4;
       }
@@ -267,7 +267,7 @@
 
     .match-verdict {
       display: block;
-      font-size: 0.78rem;
+      font-size: 0.68rem;
       color: #f0a040;
       font-weight: 500;
       margin-top: 0.25rem;
@@ -279,8 +279,8 @@
 // Match Score Ring (sidebar)
 .match-score-ring {
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: 60px;
+  height: 60px;
   margin: 0 auto;
 
   .match-ring-svg {
@@ -296,7 +296,7 @@
     align-items: center;
     justify-content: center;
     font-family: 'Playfair Display', serif;
-    font-size: 1.25rem;
+    font-size: 1rem;
     font-weight: 700;
     color: #e8e2d4;
   }
@@ -318,13 +318,13 @@
   align-items: center;
   gap: 0.75rem;
   width: 100%;
-  padding: 0.9rem 1rem;
+  padding: 0.5rem 0.5rem;
   border: 1px solid rgba(232, 226, 212, 0.07);
   border-radius: 0.875rem;
   background: transparent;
   color: #a8a090;
   font-family: 'Syne', sans-serif;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 500;
   cursor: pointer;
   transition:
@@ -917,6 +917,30 @@
     color: #a8a090;
     line-height: 1.7;
     margin: 0;
+  }
+
+  .pdf-cancel-btn {
+    margin-top: 2rem;
+    padding: 0.65rem 1.5rem;
+    border: 1px solid rgba(224, 112, 96, 0.22);
+    border-radius: 0.75rem;
+    background: rgba(224, 112, 96, 0.05);
+    color: #e07060;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.24s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    width: 100%;
+
+    &:hover {
+      border-color: rgba(224, 112, 96, 0.45);
+      background: rgba(224, 112, 96, 0.10);
+      color: #f08070;
+      transform: translateY(-1px);
+    }
   }
 }
 

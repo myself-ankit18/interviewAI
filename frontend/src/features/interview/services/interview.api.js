@@ -43,9 +43,10 @@ export const getAllInterviewReports = async () => {
     }   
 };
 
-export const generateResumePDF = async ({interviewId, aiModel}) => {
+export const generateResumePDF = async ({interviewId, aiModel}, signal) => {
     const response = await api.post(`/api/interview/resume/pdf/${interviewId}`, { aiModel }, {
-        responseType: 'blob'
+        responseType: 'blob',
+        signal
     });
     return response.data;
 };
@@ -60,9 +61,10 @@ export const getProjectIdeas = async ({interviewId}) => {
     }
 };
 
-export const downloadFullReportPDF = async (interviewId) => {
+export const downloadFullReportPDF = async (interviewId, signal) => {
     const response = await api.get(`/api/interview/full-report/pdf/${interviewId}`, {
-        responseType: 'blob'
+        responseType: 'blob',
+        signal
     });
     return response.data;
 };

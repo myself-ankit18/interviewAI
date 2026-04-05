@@ -12,7 +12,7 @@ const Interview = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { interviewId } = useParams()
   const navigate = useNavigate()
-  const { report, loading, pdfLoading, error, setError, getReportByID, getResumePDF, getProjectIdeasForReport, getFullReportPDF } = useInterview()
+  const { report, loading, pdfLoading, error, setError, getReportByID, getResumePDF, getProjectIdeasForReport, getFullReportPDF, cancelPdfGeneration } = useInterview()
   const { handleLogout, user } = useAuth()
 
   const [showDownloadModal, setShowDownloadModal] = useState(false)
@@ -418,6 +418,10 @@ const Interview = () => {
         <span className="nav-icon">📄</span>
         Generate AI Improved Resume
       </button>
+      <button className="nav-item nav-item--download-report" onClick={() => getFullReportPDF(interviewId)} disabled={pdfLoading}>
+        <span className="nav-icon">📊</span>
+        Download Whole Report
+      </button>
     </nav>
   )
 
@@ -434,11 +438,6 @@ const Interview = () => {
           <button className="topbar-logout" onClick={onLogout}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Logout
-          </button>
-          
-          <button className="topbar-download-report" onClick={() => getFullReportPDF(interviewId)} disabled={pdfLoading}>
-            <span className="btn-icon">📊</span>
-            Download Whole Report
           </button>
           
           <button 
@@ -479,6 +478,9 @@ const Interview = () => {
             <div className="pdf-progress-dots">
               <span></span><span></span><span></span>
             </div>
+            <button className="pdf-cancel-btn" onClick={cancelPdfGeneration}>
+              Cancel Generation
+            </button>
           </div>
         </div>
       )}
