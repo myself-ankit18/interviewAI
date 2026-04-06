@@ -45,53 +45,144 @@
 
 // GROQ SYSTEM (ACTIVE)
 const Groq = require("groq-sdk");
-const {z} = require("zod")
-const {zodToJsonSchema} = require("zod-to-json-schema")
+const { z } = require("zod");
+const { zodToJsonSchema } = require("zod-to-json-schema");
 const puppeteer = require("puppeteer");
 
 const ai = new Groq({
-    apiKey: process.env.GROQ_API_KEY,
+  apiKey: process.env.GROQ_API_KEY,
 });
 
 const interviewReportSchema = z.object({
-    matchScore: z.number().describe("A score between 0 and 100 that indicates how well the candidate matches the job requirements based on the analysis of the resume, self-description, and job description."),
-    technicalQuestions: z.array(z.object({
-        question: z.string().describe("The technical question can be asked during the interview."),
-        intention: z.string().describe("The intention by the interviewer behind asking the technical question."),
-        answer: z.string().describe("How to answer the technical question, including key points that should be covered in the answer.")
-    })).describe("A list of technical questions(at least 10) that can be asked during the interview, along with the intention behind each question and how to answer it."),
-    behavioralQuestions: z.array(z.object({
-        question: z.string().describe("The behavioral question can be asked during the interview."),
-        intention: z.string().describe("The intention by the interviewer behind asking the behavioral question."),
-        answer: z.string().describe("How to answer the behavioral question, including key points that should be covered in the answer.")
-    })).describe("A list of behavioral questions (at least 10) that can be asked during the interview, along with the intention behind each question and how to answer it."),
-    skillGaps: z.array(z.object({
-        skill: z.string().describe("The skill that the candidate is lacking based on the analysis of the resume, self-description, and job description."),
-        severity: z.enum(['Low', 'Medium', 'High']).describe("The severity of the skill gap, indicating how critical it is for the candidate to improve in this area.")
-    })).describe("A list of skill gaps that the candidate has, along with the severity of each gap."),
-    preparationPlan: z.array(z.object({
-        day: z.number().describe("The day number in the preparation plan, starting from 1."),
-        focus: z.string().describe("The main focus for the day, such as a specific topic, skill, or type of question to practice."),
-        tasks: z.array(z.string()).describe("A list of specific tasks or activities that the candidate should complete on this day to prepare for the interview.")
-    })).describe("A detailed preparation plan for the candidate, outlining what they should focus on and do each day leading up to the interview."),
-    title: z.string().describe("The title of the job position that the candidate is applying for, which can be used to tailor the interview report and preparation plan to the specific role."),
-    resumeAnalysis: z.object({
-        matchedKeywords: z.array(z.string()).describe("EXACT keywords or short technical phrases found in the resume that match the job description."),
-        missingKeywords: z.array(z.string()).describe("Critical keywords or required technologies from the job description that are NOT found in the resume.")
-    }).describe("ATS-style keyword analysis for showing a heatmap of match vs gaps.")
-})
+  matchScore: z
+    .number()
+    .describe(
+      "A score between 0 and 100 that indicates how well the candidate matches the job requirements based on the analysis of the resume, self-description, and job description.",
+    ),
+  technicalQuestions: z
+    .array(
+      z.object({
+        question: z
+          .string()
+          .describe(
+            "The technical question can be asked during the interview.",
+          ),
+        intention: z
+          .string()
+          .describe(
+            "The intention by the interviewer behind asking the technical question.",
+          ),
+        answer: z
+          .string()
+          .describe(
+            "How to answer the technical question, including key points that should be covered in the answer.",
+          ),
+      }),
+    )
+    .describe(
+      "A list of technical questions(at least 10) that can be asked during the interview, along with the intention behind each question and how to answer it.",
+    ),
+  behavioralQuestions: z
+    .array(
+      z.object({
+        question: z
+          .string()
+          .describe(
+            "The behavioral question can be asked during the interview.",
+          ),
+        intention: z
+          .string()
+          .describe(
+            "The intention by the interviewer behind asking the behavioral question.",
+          ),
+        answer: z
+          .string()
+          .describe(
+            "How to answer the behavioral question, including key points that should be covered in the answer.",
+          ),
+      }),
+    )
+    .describe(
+      "A list of behavioral questions (at least 10) that can be asked during the interview, along with the intention behind each question and how to answer it.",
+    ),
+  skillGaps: z
+    .array(
+      z.object({
+        skill: z
+          .string()
+          .describe(
+            "The skill that the candidate is lacking based on the analysis of the resume, self-description, and job description.",
+          ),
+        severity: z
+          .enum(["Low", "Medium", "High"])
+          .describe(
+            "The severity of the skill gap, indicating how critical it is for the candidate to improve in this area.",
+          ),
+      }),
+    )
+    .describe(
+      "A list of skill gaps that the candidate has, along with the severity of each gap.",
+    ),
+  preparationPlan: z
+    .array(
+      z.object({
+        day: z
+          .number()
+          .describe("The day number in the preparation plan, starting from 1."),
+        focus: z
+          .string()
+          .describe(
+            "The main focus for the day, such as a specific topic, skill, or type of question to practice.",
+          ),
+        tasks: z
+          .array(z.string())
+          .describe(
+            "A list of specific tasks or activities that the candidate should complete on this day to prepare for the interview.",
+          ),
+      }),
+    )
+    .describe(
+      "A detailed preparation plan for the candidate, outlining what they should focus on and do each day leading up to the interview.",
+    ),
+  title: z
+    .string()
+    .describe(
+      "The title of the job position that the candidate is applying for, which can be used to tailor the interview report and preparation plan to the specific role.",
+    ),
+  resumeAnalysis: z
+    .object({
+      matchedKeywords: z
+        .array(z.string())
+        .describe(
+          "EXACT keywords or short technical phrases found in the resume that match the job description.",
+        ),
+      missingKeywords: z
+        .array(z.string())
+        .describe(
+          "Critical keywords or required technologies from the job description that are NOT found in the resume.",
+        ),
+    })
+    .describe(
+      "ATS-style keyword analysis for showing a heatmap of match vs gaps.",
+    ),
+});
 
-async function generateInterviewReport({resume, selfDescription, jobDescription, aiModel}){
-    const jsonSchema = zodToJsonSchema(interviewReportSchema);
+async function generateInterviewReport({
+  resume,
+  selfDescription,
+  jobDescription,
+  aiModel,
+}) {
+  const jsonSchema = zodToJsonSchema(interviewReportSchema);
 
-    const prompt = `You are a high-level, industry-agnostic recruiting and interview expert. You have successfully placed thousands of candidates in roles across EVERY major sector (Engineering, Medicine, Finance, Creative, Legal, Administration, etc.). Analyze this candidate thoroughly and produce a comprehensive, industry-specific interview preparation report.
+  const prompt = `You are a high-level, industry-agnostic recruiting and interview expert. You have successfully placed thousands of candidates in roles across EVERY major sector (Engineering, Medicine, Finance, Creative, Legal, Administration, etc.). Analyze this candidate thoroughly and produce a comprehensive, industry-specific interview preparation report.
 
 === CANDIDATE PROFILE ===
 Resume:
 ${resume}
 
 Self-Description:
-${selfDescription || '[EMPTY]'}
+${selfDescription || "[EMPTY]"}
 
 Target Job Description:
 ${jobDescription}
@@ -189,39 +280,52 @@ CRITICAL REMINDERS:
 - technicalQuestions and behavioralQuestions must EACH have at least 12 entries
 - Every answer must be 200+ words, detailed and actionable
 - preparationPlan must have 7-10 days with 3-5 specific tasks each
-- All content must be tailored to THIS specific candidate and THIS specific job`
+- All content must be tailored to THIS specific candidate and THIS specific job`;
 
-    const response = await ai.chat.completions.create({
-        model: aiModel || "meta-llama/llama-4-scout-17b-16e-instruct",
-        messages: [{
-            role: "system",
-            content: "You are an elite interview preparation coach. You produce thorough, honest, and actionable interview reports. Your match scores are always precise and well-calibrated — you never default to generic numbers like 85 or 80. Your questions are at real interview difficulty level. Your answers are comprehensive and production-ready. Respond with valid JSON only — no markdown formatting."
-        }, {
-            role: "user",
-            content: prompt
-        }],
-        temperature: 0.25,
-        max_tokens: 8000,
-        response_format: { type: "json_object" }
-    })
+  const response = await ai.chat.completions.create({
+    model: aiModel || "meta-llama/llama-4-scout-17b-16e-instruct",
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are an elite interview preparation coach. You produce thorough, honest, and actionable interview reports. Your match scores are always precise and well-calibrated — you never default to generic numbers like 85 or 80. Your questions are at real interview difficulty level. Your answers are comprehensive and production-ready. Respond with valid JSON only — no markdown formatting.",
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    temperature: 0.25,
+    max_tokens: 8000,
+    response_format: { type: "json_object" },
+  });
 
-    console.log("AI response:", JSON.parse(response.choices[0].message.content))
-    return response.choices[0].message.content;
+  console.log("AI response:", JSON.parse(response.choices[0].message.content));
+  return response.choices[0].message.content;
 }
 
-async function generateResumePDF({resume, selfDescription, jobDescription, aiModel}){
-    const resumePdfSchema = z.object({
-        html: z.string().describe("Complete HTML resume document with inline CSS styling, ready for PDF conversion.")
-    });
-    
-    const prompt = `You are a world-class professional resume writer with 15+ years of experience placing candidates at top-tier firms across all industries (FAANG, Fortune 500, Healthcare, Engineering Firms, Creative Agencies, etc.).
+async function generateResumePDF({
+  resume,
+  selfDescription,
+  jobDescription,
+  aiModel,
+}) {
+  const resumePdfSchema = z.object({
+    html: z
+      .string()
+      .describe(
+        "Complete HTML resume document with inline CSS styling, ready for PDF conversion.",
+      ),
+  });
+
+  const prompt = `You are a world-class professional resume writer with 15+ years of experience placing candidates at top-tier firms across all industries (FAANG, Fortune 500, Healthcare, Engineering Firms, Creative Agencies, etc.).
 
 Generate a COMPLETE, INDUSTRY-GRADE resume in HTML format. Your PRIMARY job is to REWRITE and ENHANCE the text content to be professional, compelling, and ATS-optimized for the SPECIFIC target role — the description details remain factually the same, but every sentence must be rewritten to the highest standards of the [Relevant Industry].
 
 === SOURCE INFORMATION ===
 Resume: ${resume}
 
-Self-description: ${selfDescription || '[EMPTY]'}
+Self-description: ${selfDescription || "[EMPTY]"}
 
 Target Job Description: ${jobDescription}
 
@@ -290,106 +394,141 @@ Target Job Description: ${jobDescription}
 Respond with a JSON object with a single 'html' field containing the complete HTML resume.
 Schema: ${JSON.stringify(zodToJsonSchema(resumePdfSchema), null, 2)}`;
 
-    try {
-        console.log(`AI Synthesis initiated with model: ${aiModel || "llama-3.3-70b-versatile"}`);
-        
-        let response = await ai.chat.completions.create({
-            model: aiModel || "llama-3.3-70b-versatile",
-            messages: [{
-                role: "system",
-                content: "You are an expert professional resume writer. You MUST produce the resume in HTML format. Your JSON response MUST include a non-empty 'html' string field. Do NOT return null."
-            }, {
-                role: "user",
-                content: prompt
-            }],
-            temperature: 0.3,
-            max_tokens: 6000,
-            response_format: { type: "json_object" }
-        });
-        
-        let content = response.choices[0].message.content;
-        let jsonResponse = JSON.parse(content);
+  try {
+    console.log(
+      `AI Synthesis initiated with model: ${aiModel || "llama-3.3-70b-versatile"}`,
+    );
 
-        // FALLBACK MECHANISM: If the selected model (e.g. Kimi or Llama 4 Scout) returns null for HTML,
-        // we'll automatically try the most powerful/stable model (Llama 3.3 70B) to ensure the user gets their resume.
-        if (!jsonResponse || !jsonResponse.html || jsonResponse.html === null) {
-            console.warn(`Primary model ${aiModel} failed or returned null HTML. Triggering fallback to llama-3.3-70b-versatile...`);
-            
-            response = await ai.chat.completions.create({
-                model: "llama-3.3-70b-versatile",
-                messages: [{
-                    role: "system",
-                    content: "You are an expert resume writer. You produce ATS-optimized, professionally written resumes that get candidates interviews at top companies. Always output valid JSON with an 'html' field."
-                }, {
-                    role: "user",
-                    content: prompt
-                }],
-                temperature: 0.25,
-                max_tokens: 6000,
-                response_format: { type: "json_object" }
-            });
-            
-            content = response.choices[0].message.content;
-            jsonResponse = JSON.parse(content);
-        }
-
-        if (!jsonResponse || !jsonResponse.html) {
-            console.error("Critical: Both primary model and fallback failed to generate HTML.");
-            throw new Error("AI engine failed to synthesize resume content. Please try again later or with a different resume.");
-        }
-
-        console.log("Successfully synthesized resume HTML. Converting to PDF...");
-        const pdf = await convertHTMLToPDF(jsonResponse.html);
-        return { pdf, html: jsonResponse.html };
-    } catch (error) {
-        console.error("Error in generateResumePDF service:", error);
-        throw error;
-    }
-}
-
-async function convertHTMLToPDF(htmlContent){
-    let browser;
-    try {
-        // In production (Render), use the system-installed Google Chrome instead of
-        // Puppeteer's bundled Chromium, which frequently fails in container environments.
-        const launchOptions = {
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process'],
-            headless: true
-        };
-
-        if (process.env.NODE_ENV === 'production') {
-            launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable';
-            console.log(`[PDF] Using system Chrome at: ${launchOptions.executablePath}`);
-        }
-
-        browser = await puppeteer.launch(launchOptions);
-        const page = await browser.newPage();
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-        const pdf = await page.pdf({ format: 'A4' });
-        return pdf;
-    } catch (err) {
-        console.error("Puppeteer PDF conversion failed:", err);
-        throw new Error("Failed to convert resume to PDF. System engine error.");
-    } finally {
-        if (browser) await browser.close();
-    }
-}
-
-async function generateProjectIdeas({skillGaps, jobDescription, aiModel}){
-    const projectIdeasSchema = z.object({
-        projects: z.array(z.object({
-            title: z.string().describe("A catchy, portfolio-ready project title"),
-            description: z.string().describe("2-3 sentence description of what the project does and why it's impressive"),
-            techStack: z.array(z.string()).describe("List of technologies used in this project"),
-            skillsCovered: z.array(z.string()).describe("Which skill gaps this project addresses"),
-            difficulty: z.enum(['Beginner', 'Intermediate', 'Advanced']).describe("Project difficulty level"),
-            estimatedTime: z.string().describe("Estimated time to complete, e.g. '1-2 weeks'"),
-            keyFeatures: z.array(z.string()).describe("3-5 key features to implement"),
-            whyItImpresses: z.string().describe("Why this project would impress a recruiter or hiring manager")
-        })).describe("2-3 portfolio-ready side project ideas")
+    let response = await ai.chat.completions.create({
+      model: aiModel || "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert professional resume writer. You MUST produce the resume in HTML format. Your JSON response MUST include a non-empty 'html' string field. Do NOT return null.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 6000,
+      response_format: { type: "json_object" },
     });
 
-    const prompt = `You are a senior engineering manager who reviews portfolios and side projects when hiring. Based on the candidate's skill gaps and the target job, suggest 2-3 SPECIFIC, portfolio-ready side project ideas that would:
+    let content = response.choices[0].message.content;
+    let jsonResponse = JSON.parse(content);
+
+    // FALLBACK MECHANISM: If the selected model (e.g. Kimi or Llama 4 Scout) returns null for HTML,
+    // we'll automatically try the most powerful/stable model (Llama 3.3 70B) to ensure the user gets their resume.
+    if (!jsonResponse || !jsonResponse.html || jsonResponse.html === null) {
+      console.warn(
+        `Primary model ${aiModel} failed or returned null HTML. Triggering fallback to llama-3.3-70b-versatile...`,
+      );
+
+      response = await ai.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an expert resume writer. You produce ATS-optimized, professionally written resumes that get candidates interviews at top companies. Always output valid JSON with an 'html' field.",
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.25,
+        max_tokens: 6000,
+        response_format: { type: "json_object" },
+      });
+
+      content = response.choices[0].message.content;
+      jsonResponse = JSON.parse(content);
+    }
+
+    if (!jsonResponse || !jsonResponse.html) {
+      console.error(
+        "Critical: Both primary model and fallback failed to generate HTML.",
+      );
+      throw new Error(
+        "AI engine failed to synthesize resume content. Please try again later or with a different resume.",
+      );
+    }
+
+    console.log("Successfully synthesized resume HTML. Converting to PDF...");
+    const pdf = await convertHTMLToPDF(jsonResponse.html);
+    return { pdf, html: jsonResponse.html };
+  } catch (error) {
+    console.error("Error in generateResumePDF service:", error);
+    throw error;
+  }
+}
+
+async function convertHTMLToPDF(htmlContent) {
+  let browser;
+  try {
+    const browser = await puppeteer.launch({
+      headless: "new", // Use "new" for newer Puppeteer versions
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--single-process",
+      ],
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+    const pdf = await page.pdf({ format: "A4" });
+    return pdf;
+  } catch (err) {
+    console.error("Puppeteer PDF conversion failed:", err);
+    throw new Error("Failed to convert resume to PDF. System engine error.");
+  } finally {
+    if (browser) await browser.close();
+  }
+}
+
+async function generateProjectIdeas({ skillGaps, jobDescription, aiModel }) {
+  const projectIdeasSchema = z.object({
+    projects: z
+      .array(
+        z.object({
+          title: z.string().describe("A catchy, portfolio-ready project title"),
+          description: z
+            .string()
+            .describe(
+              "2-3 sentence description of what the project does and why it's impressive",
+            ),
+          techStack: z
+            .array(z.string())
+            .describe("List of technologies used in this project"),
+          skillsCovered: z
+            .array(z.string())
+            .describe("Which skill gaps this project addresses"),
+          difficulty: z
+            .enum(["Beginner", "Intermediate", "Advanced"])
+            .describe("Project difficulty level"),
+          estimatedTime: z
+            .string()
+            .describe("Estimated time to complete, e.g. '1-2 weeks'"),
+          keyFeatures: z
+            .array(z.string())
+            .describe("3-5 key features to implement"),
+          whyItImpresses: z
+            .string()
+            .describe(
+              "Why this project would impress a recruiter or hiring manager",
+            ),
+        }),
+      )
+      .describe("2-3 portfolio-ready side project ideas"),
+  });
+
+  const prompt = `You are a senior engineering manager who reviews portfolios and side projects when hiring. Based on the candidate's skill gaps and the target job, suggest 2-3 SPECIFIC, portfolio-ready side project ideas that would:
 1. Help the candidate learn the missing skills
 2. Look impressive on their portfolio/GitHub
 3. Be completable in 1-3 weeks by a motivated developer
@@ -429,47 +568,63 @@ EXAMPLE OUTPUT:
 Respond with valid JSON matching this schema:
 ${JSON.stringify(zodToJsonSchema(projectIdeasSchema), null, 2)}`;
 
-    const response = await ai.chat.completions.create({
-        model: aiModel || "meta-llama/llama-4-scout-17b-16e-instruct",
-        messages: [{
-            role: "system",
-            content: "You are a senior engineering hiring manager. You suggest impressive, practical portfolio projects that help candidates close their skill gaps. Respond with valid JSON only. NEVER omit any fields from the requested schema."
-        }, {
-            role: "user",
-            content: prompt
-        }],
-        temperature: 0.4,
-        max_tokens: 3000,
-        response_format: { type: "json_object" }
-    });
+  const response = await ai.chat.completions.create({
+    model: aiModel || "meta-llama/llama-4-scout-17b-16e-instruct",
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are a senior engineering hiring manager. You suggest impressive, practical portfolio projects that help candidates close their skill gaps. Respond with valid JSON only. NEVER omit any fields from the requested schema.",
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    temperature: 0.4,
+    max_tokens: 3000,
+    response_format: { type: "json_object" },
+  });
 
-    return response.choices[0].message.content;
+  return response.choices[0].message.content;
 }
 
+async function validateInputs({
+  resume,
+  selfDescription,
+  jobDescription,
+  aiModel,
+}) {
+  const validationSchema = z.object({
+    isValid: z
+      .boolean()
+      .describe(
+        "true ONLY if ALL three inputs are genuinely valid. false if ANY single input is problematic.",
+      ),
+    reason: z
+      .string()
+      .describe(
+        "If isValid is false, a brief explanation of which field failed and why.",
+      ),
+  });
 
-async function validateInputs({resume, selfDescription, jobDescription, aiModel}){
-    const validationSchema = z.object({
-        isValid: z.boolean().describe("true ONLY if ALL three inputs are genuinely valid. false if ANY single input is problematic."),
-        reason: z.string().describe("If isValid is false, a brief explanation of which field failed and why.")
-    });
-
-    const prompt = `You are a FAIR and CONTEXT-AWARE input validator for an AI interview preparation tool. Your job is to catch genuinely invalid or spam inputs while ALLOWING real user data through — even if it's messy.
+  const prompt = `You are a FAIR and CONTEXT-AWARE input validator for an AI interview preparation tool. Your job is to catch genuinely invalid or spam inputs while ALLOWING real user data through — even if it's messy.
 
 === INPUTS TO VALIDATE ===
 
 FIELD 1 - Resume (extracted from a PDF):
 """
-${resume && resume.trim().length > 0 ? resume.substring(0, 2000) : '[EMPTY]'}
+${resume && resume.trim().length > 0 ? resume.substring(0, 2000) : "[EMPTY]"}
 """
 
 FIELD 2 - Self-Description (user typed):
 """
-${selfDescription && selfDescription.trim().length > 0 ? selfDescription : '[EMPTY]'}
+${selfDescription && selfDescription.trim().length > 0 ? selfDescription : "[EMPTY]"}
 """
 
 FIELD 3 - Job Description (user typed):
 """
-${jobDescription && jobDescription.trim().length > 0 ? jobDescription : '[EMPTY]'}
+${jobDescription && jobDescription.trim().length > 0 ? jobDescription : "[EMPTY]"}
 """
 
 === VALIDATION RULES ===
@@ -498,43 +653,50 @@ IMPORTANT: When in doubt, ACCEPT. It is better to let a borderline input through
 
 Return JSON: { "isValid": boolean, "reason": string }`;
 
-    try {
-        const response = await ai.chat.completions.create({
-            model: aiModel || "llama-3.1-8b-instant",
-            messages: [{
-                role: "system",
-                content: "You are a fair input validator. Accept any input that looks like a real resume, job description, or professional content — even if messy or poorly formatted. Self-description is optional and can be empty. Only reject clearly spam, gibberish, or harmful content. When in doubt, ACCEPT. Respond with valid JSON only."
-            }, {
-                role: "user",
-                content: prompt
-            }],
-            temperature: 0.05,
-            max_tokens: 200,
-            response_format: { type: "json_object" }
-        });
+  try {
+    const response = await ai.chat.completions.create({
+      model: aiModel || "llama-3.1-8b-instant",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a fair input validator. Accept any input that looks like a real resume, job description, or professional content — even if messy or poorly formatted. Self-description is optional and can be empty. Only reject clearly spam, gibberish, or harmful content. When in doubt, ACCEPT. Respond with valid JSON only.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.05,
+      max_tokens: 200,
+      response_format: { type: "json_object" },
+    });
 
-        const result = JSON.parse(response.choices[0].message.content);
-        console.log("Validation result:", result);
-        return result;
-    } catch (e) {
-        console.error("Input validation AI call failed, letting it pass by default:", e);
-        return { isValid: true, reason: '' };
-    }
+    const result = JSON.parse(response.choices[0].message.content);
+    console.log("Validation result:", result);
+    return result;
+  } catch (e) {
+    console.error(
+      "Input validation AI call failed, letting it pass by default:",
+      e,
+    );
+    return { isValid: true, reason: "" };
+  }
 }
 
-async function generateFullReportPDF(reportData){
-    const { 
-        title, 
-        matchScore, 
-        technicalQuestions, 
-        behavioralQuestions, 
-        skillGaps, 
-        preparationPlan, 
-        projectIdeas,
-        aiModel
-    } = reportData;
+async function generateFullReportPDF(reportData) {
+  const {
+    title,
+    matchScore,
+    technicalQuestions,
+    behavioralQuestions,
+    skillGaps,
+    preparationPlan,
+    projectIdeas,
+    aiModel,
+  } = reportData;
 
-    const htmlContent = `
+  const htmlContent = `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -681,7 +843,7 @@ async function generateFullReportPDF(reportData){
             <div class="header-info">
                 <h1>Interview Preparation Report</h1>
                 <p>Position: <strong>${title}</strong></p>
-                <p>AI Agent: ${aiModel || 'Primary AI'}</p>
+                <p>AI Agent: ${aiModel || "Primary AI"}</p>
             </div>
             <div class="score-container" style="text-align: right;">
                 <div class="score-value">${matchScore}%</div>
@@ -692,74 +854,106 @@ async function generateFullReportPDF(reportData){
         <div class="section">
             <div class="section-title">Critical Skill Gaps</div>
             <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                ${skillGaps?.map(gap => `
+                ${
+                  skillGaps
+                    ?.map(
+                      (gap) => `
                     <div class="card" style="flex: 1; min-width: 200px;">
                         <span class="label">Skill</span>
                         <div class="content"><strong>${gap.skill}</strong></div>
                         <span class="severity severity-${gap.severity?.toLowerCase()}">${gap.severity} Priority</span>
                     </div>
-                `).join('') || '<p>No skill gaps identified.</p>'}
+                `,
+                    )
+                    .join("") || "<p>No skill gaps identified.</p>"
+                }
             </div>
         </div>
 
         <div class="section">
             <div class="section-title">Technical Interview Questions</div>
-            ${technicalQuestions?.map((q, i) => `
+            ${
+              technicalQuestions
+                ?.map(
+                  (q, i) => `
                 <div class="card">
-                    <h3>${i+1}. ${q.question}</h3>
+                    <h3>${i + 1}. ${q.question}</h3>
                     <span class="label">Interviewer Intention</span>
                     <div class="content">${q.intention}</div>
                     <span class="label">Model Answer</span>
                     <div class="content">${q.answer}</div>
                 </div>
-            `).join('') || '<p>No technical questions generated.</p>'}
+            `,
+                )
+                .join("") || "<p>No technical questions generated.</p>"
+            }
         </div>
 
         <div class="section">
             <div class="section-title">Behavioral Interview Questions</div>
-            ${behavioralQuestions?.map((q, i) => `
+            ${
+              behavioralQuestions
+                ?.map(
+                  (q, i) => `
                 <div class="card">
-                    <h3>${i+1}. ${q.question}</h3>
+                    <h3>${i + 1}. ${q.question}</h3>
                     <span class="label">Candidate Story Focus</span>
                     <div class="content">${q.intention}</div>
                     <span class="label">Model Answer (STAR Method)</span>
                     <div class="content">${q.answer}</div>
                 </div>
-            `).join('') || '<p>No behavioral questions generated.</p>'}
+            `,
+                )
+                .join("") || "<p>No behavioral questions generated.</p>"
+            }
         </div>
 
         <div class="section">
             <div class="section-title">Preparation Battle Plan</div>
-            ${preparationPlan?.map(day => `
+            ${
+              preparationPlan
+                ?.map(
+                  (day) => `
                 <div class="card">
                     <span class="label">Day ${day.day}</span>
                     <div class="content"><strong>Focus: ${day.focus}</strong></div>
                     <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #4a5568;">
-                        ${day.tasks?.map(task => `<li>${task}</li>`).join('')}
+                        ${day.tasks?.map((task) => `<li>${task}</li>`).join("")}
                     </ul>
                 </div>
-            `).join('') || '<p>No plan available.</p>'}
+            `,
+                )
+                .join("") || "<p>No plan available.</p>"
+            }
         </div>
 
-        ${projectIdeas?.length > 0 ? `
+        ${
+          projectIdeas?.length > 0
+            ? `
         <div class="section">
             <div class="section-title">Portfolio Project Ideas</div>
-            ${projectIdeas.map(project => `
+            ${projectIdeas
+              .map(
+                (project) => `
                 <div class="card">
                     <h3>${project.title}</h3>
                     <div class="content" style="margin-bottom: 8px;">${project.description}</div>
                     <span class="label">Tech Stack</span>
                     <div style="margin-bottom: 10px;">
-                        ${project.techStack?.map(tech => `<span class="tag">${tech}</span>`).join('')}
+                        ${project.techStack?.map((tech) => `<span class="tag">${tech}</span>`).join("")}
                     </div>
                     <span class="label">Key Features</span>
                     <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #4a5568;">
-                        ${project.keyFeatures?.map(feat => `<li>${feat}</li>`).join('')}
+                        ${project.keyFeatures?.map((feat) => `<li>${feat}</li>`).join("")}
                     </ul>
                 </div>
-            `).join('')}
+            `,
+              )
+              .join("")}
         </div>
-        ` : ''}
+        `
+            : ""
+        }
 
         <div class="footer">
             Generated by InterviewGenie AI &mdash; Ready to crush your next interview.
@@ -768,15 +962,14 @@ async function generateFullReportPDF(reportData){
     </html>
     `;
 
-    return await convertHTMLToPDF(htmlContent);
+  return await convertHTMLToPDF(htmlContent);
 }
-
 
 module.exports = {
-    generateInterviewReport,
-    generateResumePDF,
-    convertHTMLToPDF,
-    generateProjectIdeas,
-    validateInputs,
-    generateFullReportPDF
-}
+  generateInterviewReport,
+  generateResumePDF,
+  convertHTMLToPDF,
+  generateProjectIdeas,
+  validateInputs,
+  generateFullReportPDF,
+};
