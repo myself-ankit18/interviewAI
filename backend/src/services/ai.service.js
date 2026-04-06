@@ -470,13 +470,12 @@ Schema: ${JSON.stringify(zodToJsonSchema(resumePdfSchema), null, 2)}`;
 async function convertHTMLToPDF(htmlContent) {
   let browser;
   try {
-    const browser = await puppeteer.launch({
-      headless: "new", // Use "new" for newer Puppeteer versions
+    browser = await puppeteer.launch({
+      headless: true, // Use true instead of deprecated "new"
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
-        "--single-process",
       ],
     });
 
@@ -491,6 +490,7 @@ async function convertHTMLToPDF(htmlContent) {
     if (browser) await browser.close();
   }
 }
+
 
 async function generateProjectIdeas({ skillGaps, jobDescription, aiModel }) {
   const projectIdeasSchema = z.object({
