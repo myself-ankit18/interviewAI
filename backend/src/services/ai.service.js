@@ -350,10 +350,7 @@ Schema: ${JSON.stringify(zodToJsonSchema(resumePdfSchema), null, 2)}`;
 async function convertHTMLToPDF(htmlContent){
     let browser;
     try {
-        browser = await puppeteer.launch({
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
-            headless: true
-        });
+        browser = await puppeteer.launch();
         const page = await browser.newPage();
         await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
         const pdf = await page.pdf({ format: 'A4' });

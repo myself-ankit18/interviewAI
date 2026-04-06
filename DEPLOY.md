@@ -14,7 +14,7 @@ Render is recommended for the Node.js backend.
 3.  **Configure Settings**:
     - **Root Directory**: `backend`
     - **Runtime**: `Node`
-    - **Build Command**: `npm install`
+    - **Build Command**: `./render-build.sh`
     - **Start Command**: `node server.js`
 4.  **Environment Variables**:
     Go to the **Environment** tab and add the following keys from your current `backend/.env`:
