@@ -708,7 +708,8 @@
 .reports-table-wrap {
   width: 100%;
   border: 1.5px solid var(--rule-heavy);
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .reports-table {

@@ -631,7 +631,7 @@
 
 .question-detail {
   margin-left: 3.5rem;
-  width: calc(100% - 3.5rem);
+  // width: calc(100% - 3.5rem);
 
   p {
     margin: 0.75rem 0 0;
@@ -1429,7 +1429,7 @@
   }
 
   .question-detail {
-    padding: 1rem;
+    // padding: 1rem;
 
     .answer {
       font-size: 0.85rem;
@@ -1685,6 +1685,8 @@
   }
 }
 
+ 
+
 @media (max-width: 1100px) {
   .resume-heatmap-container {
     grid-template-columns: 1fr;
@@ -1693,3 +1695,70 @@
     order: -1;
   }
 }
+
+// ─── Mobile Responsiveness Additions ──────────────────────────────
+@media (max-width: 900px) {
+  .interview-container {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+    gap: 1.5rem;
+  }
+
+  .interview-sidebar {
+    position: static;
+    top: auto;
+    padding: 1.5rem;
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  .desktop-nav {
+    display: none;
+  }
+
+  .mobile-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    
+    &.open {
+      max-height: 500px;
+    }
+  }
+
+  .hide-on-mobile {
+    display: none;
+  }
+  
+  .interview-topbar {
+    padding: 0.85rem 1rem;
+    
+    .topbar-actions > button > svg {
+      margin-right: 0;
+    }
+    .topbar-actions > button {
+      padding: 0.5rem 0.75rem;
+      font-size: 0; // hide text, show only icon
+    }
+    .topbar-actions > button > svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+// Ensure answers retain line breaks from the AI
+.question-detail p.answer {
+  white-space: pre-wrap;
+}
+
+.plan-timeline .tasks-list li {
+  white-space: pre-wrap;
+}
+
