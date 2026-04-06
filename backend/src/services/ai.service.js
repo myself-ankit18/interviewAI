@@ -350,9 +350,19 @@ Schema: ${JSON.stringify(zodToJsonSchema(resumePdfSchema), null, 2)}`;
 async function convertHTMLToPDF(htmlContent){
     let browser;
     try {
-        browser = await puppeteer.launch({
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-        });
+        // In production (Render), use the system-installed Google Chrome instead of
+        // Puppeteer's bundled Chromium, which frequently fails in container environments.
+        const launchOptions = {
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process'],
+            headless: true
+        };
+
+        if (process.env.NODE_ENV === 'production') {
+            launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable';
+            console.log(`[PDF] Using system Chrome at: ${launchOptions.executablePath}`);
+        }
+
+        browser = await puppeteer.launch(launchOptions);
         const page = await browser.newPage();
         await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
         const pdf = await page.pdf({ format: 'A4' });

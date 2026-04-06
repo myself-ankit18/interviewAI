@@ -2,33 +2,23 @@
 # exit on error
 set -o errexit
 
-# Install system dependencies for Puppeteer/Chromium on Linux (Render Environment)
-# We need these libraries to allow Chromium to render HTML to PDF in a headless state.
-echo "--- Installing Puppeteer system dependencies ---"
-apt-get update && apt-get install -y \
-    libnss3 \
-    libdbus-1-3 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libcups2 \
-    libdrm2 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxrandr2 \
-    libgbm1 \
-    libasound2 \
-    libpangocairo-1.0-0 \
-    libxshmfence1 \
-    libnss3-dev \
-    libgdk-pixbuf2.0-0 \
-    libgtk-3-0 \
-    ca-certificates \
-    fonts-liberation \
-    lsb-release \
-    xdg-utils \
-    wget \
-    --no-install-recommends
+# Install Google Chrome Stable for Puppeteer PDF generation on Render.
+# Using the official Google Chrome package is far more reliable than Puppeteer's
+# bundled Chromium, which often fails in container environments.
+echo "--- Installing Google Chrome Stable for Puppeteer ---"
+apt-get update
+apt-get install -y wget gnupg ca-certificates --no-install-recommends
+
+wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-linux-signing-key.gpg
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-linux-signing-key.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
+
+apt-get update
+apt-get install -y google-chrome-stable --no-install-recommends
+
+echo "--- Chrome installed at: $(which google-chrome-stable) ---"
+
+# Skip downloading Puppeteer's bundled Chromium since we use the system Chrome
+export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
 # Run standard npm install
 echo "--- Running npm install ---"
