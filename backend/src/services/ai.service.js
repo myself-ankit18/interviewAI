@@ -175,37 +175,21 @@ async function generateInterviewReport({
 }) {
   const jsonSchema = zodToJsonSchema(interviewReportSchema);
 
-  const prompt = `You are a brutally honest, world-class recruiting strategist and interview coach with 20+ years of experience across EVERY major industry — FAANG, Big 4, Fortune 100, top-tier hospitals, law firms, investment banks, engineering conglomerates, and creative agencies. You have reviewed over 50,000 resumes and conducted thousands of live technical and behavioral interviews.
+  const prompt = `You are a high-level, industry-agnostic recruiting and interview expert. You have successfully placed thousands of candidates in roles across EVERY major sector (Engineering, Medicine, Finance, Creative, Legal, Administration, etc.). Analyze this candidate thoroughly and produce a comprehensive, industry-specific interview preparation report.
 
-Your reputation is built on ONE thing: accuracy. Hiring managers trust your assessments because you never inflate scores, never fabricate matches, and never produce generic output. Every report you generate is forensically tailored to the specific candidate and specific role.
+=== CANDIDATE PROFILE ===
+Resume:
+${resume}
 
-=== INPUTS ===
-Resume:            ${resume}
-Self-Description:  ${selfDescription || "[NOT PROVIDED — work strictly from resume]"}
-Target Job (JD):   ${jobDescription}
+Self-Description:
+${selfDescription || "[EMPTY]"}
 
-=== PRE-ANALYSIS PHASE — COMPLETE THIS BEFORE GENERATING ANY OUTPUT ===
+Target Job Description:
+${jobDescription}
 
-Step 1 — Deconstruct the JD
-  a. Extract every REQUIRED skill, tool, certification, and methodology (label each as R = Required)
-  b. Extract every PREFERRED / NICE-TO-HAVE qualification (label each as P = Preferred)
-  c. Identify the seniority signal: junior / mid / senior / staff / principal / director
-  d. Identify the industry domain and any domain-specific jargon
+=== REPORT SECTIONS ===
 
-Step 2 — Forensic Resume Scan
-  a. List every technical skill, tool, and methodology present in the resume
-  b. List every quantified achievement present
-  c. Note years of total experience and years in the relevant domain
-  d. Note any explicit certifications, degrees, or credentials
-
-Step 3 — Gap Matrix
-  For each Required skill from Step 1a: Does the resume/self-description show clear evidence? 
-  Mark: MATCH / PARTIAL / ABSENT
-  For each Preferred skill from Step 1b: Same exercise.
-
-This internal analysis drives EVERY section below. Do not skip it.
-
-=== SECTION 1: matchScore (integer 0–100) ===
+=== 1: matchScore (integer 0–100) ===
 
 Compute a PRECISE, HONEST score using this exact weighted formula:
 
@@ -242,172 +226,81 @@ FORBIDDEN outputs: 85, 80, 75, 70, 65, 60, 50 (exact round numbers signal lazy s
 You MUST output a precise number like 67, 73, 82, 58, 41, 77, 63, 88, 34.
 If your formula produces exactly 80, recheck your PARTIAL scoring — you likely rounded too aggressively.
 
-=== SECTION 2: technicalQuestions (array of 12+ objects) ===
+**2. technicalQuestions (array of 12+ objects)**
+Generate questions a REAL interviewer at this company would ask for THIS specific role:
 
-Generate questions a REAL senior interviewer at this specific type of company would ask.
-These must feel like they came from a person — not a textbook or a quiz generator.
+Question mix requirements:
+- 3-4 foundational questions testing core concepts from the JD tech stack
+- 3-4 intermediate applied questions (debugging, optimization, real-world scenarios)
+- 2-3 system design / architecture questions relevant to the role
+- 2-3 advanced questions (trade-offs, scalability, edge cases)
 
-Mandatory question distribution:
-  • 3–4 foundational questions: Core concepts directly from the JD tech stack
-  • 3–4 intermediate applied questions: Real scenarios — debugging, optimization, trade-offs
-  • 2–3 system design / architecture questions: Scaled to the role's seniority level
-  • 2–3 advanced questions: Edge cases, failure modes, competing approaches
+Each object EXACTLY must have these properties:
+- question: Exact phrasing an interviewer would use (natural, conversational — NOT textbook-style)
+- intention: What the interviewer is REALLY evaluating (be specific, e.g., "Tests ability to reason about database indexing strategies under write-heavy workloads")
+- answer: COMPREHENSIVE model answer (200-400 words) including trade-offs, code snippets, and common pitfalls.
 
-Each object must have EXACTLY these fields:
+DO NOT generate generic textbook questions. Examples of BAD vs GOOD:
+- BAD: "What are your strengths?" → GOOD: "Looking at the [Specific JD Requirement], walk me through a time you overcame a [Domain-Specific Challenge] using [Specific Tool/Methodology mentioned in JD]."
+- BAD: "Explain [Generic Concept]" → GOOD: "You're tasked with optimizing [Specific System/Process from JD] which is currently underperforming by [Metric]. Walk me through your diagnostic process, what tools or standards you'd apply, and how you'd validate the solution."
 
-  question:
-    Write exactly as an interviewer would say it — conversational, specific, grounded in the JD.
-    Reference actual tools, systems, or scenarios from the JD where possible.
-    BAD: "Explain polymorphism."
-    GOOD: "You're migrating [Company's implied stack] from a monolith to microservices. 
-           One of your services is hitting 500 errors under load every ~3 minutes. 
-           Walk me through how you'd diagnose and fix this without taking down production."
+**3. behavioralQuestions (array of 12+ objects)**
+Generate questions covering a wide range of competencies (Leadership, Failure, Conflict, Ownership, etc.).
 
-  intention:
-    What is the interviewer ACTUALLY probing for? Be specific.
-    BAD: "Tests technical knowledge."
-    GOOD: "Evaluates whether the candidate can distinguish between CPU-bound and I/O-bound 
-           bottlenecks and knows which profiling tools to reach for first."
+Each object MUST have these EXACT properties:
+- question: Natural conversational phrasing (not robotic)
+- intention: The specific leadership principle or competency being evaluated
+- answer: FULL STAR-method response (200-350 words) tailored to the candidate's resume (Situation, Task, Action, Result, Reflection).
 
-  answer:
-    A comprehensive model answer, 200–400 words. Must include:
-    • The correct core answer
-    • At least one concrete example or pseudocode snippet
-    • Trade-offs or when the approach breaks down
-    • 1–2 common mistakes candidates make and why they're wrong
-    Write this as if coaching the candidate — clear, teachable, honest about nuance.
+Make stories BELIEVABLE based on the candidate's actual resume content.
 
-=== SECTION 3: behavioralQuestions (array of 12+ objects) ===
+**4. skillGaps (array of objects)**
+Identify every gap between the candidate's profile and the JD requirements.
+Each object MUST have these EXACT properties:
+- skill (string): Be SPECIFIC, e.g., "AutoCAD specialized layer management" not just "Design"
+- severity (string): Must be 'Low', 'Medium', or 'High' based on requirement importance.
 
-Cover a WIDE range of competency dimensions. Use this as a checklist — do not cluster:
-  Leadership under ambiguity | Technical disagreement with a senior | 
-  Failure and recovery | Stakeholder conflict | Deadline under pressure |
-  Owning a mistake | Cross-functional influence without authority |
-  Onboarding / mentoring others | Prioritization under competing demands |
-  Proactively improving a broken process | Navigating org politics |
-  Adapting to sudden scope change
+CRITICAL: ONLY list skills or tools that are explicitly mentioned or strongly implied by the specific Job Description provided. DO NOT include generic technical skills like "Kubernetes" or "React" unless they appear in the JD.
 
-Each object must have EXACTLY these fields:
+**5. preparationPlan (array of 7-10 day objects)**
+Design a realistic daily study plan for a working professional (2-4 hours/day):
+- Order by PRIORITY: High severity skill gaps first
+- Each day must have:
+  * day: number (1-10)
+  * focus: Clear topic area (e.g., "System Design Fundamentals + Database Optimization")
+  * tasks: Array of 3-5 SPECIFIC, actionable items. Examples:
+    - "Solve [Relevant Domain Problem/Exercise] focusing on [Specific JD Principle]"
+    - "Simulate [Workflow from JD]: write the process flow, identify potential bottlenecks, and suggest [Industry Standard] optimizations"
+    - "Record yourself answering 3 behavioral questions using STAR method, review for filler words and vague statements"
+  AVOID generic tasks like "Study [Software]" or "Practice [Skill]"
 
-  question:
-    Conversational, role-specific phrasing. Reference the actual role or domain where possible.
-    BAD: "Tell me about a time you showed leadership."
-    GOOD: "Tell me about a time you had to push back on a product decision you believed 
-           was technically unsound — how did you make your case, and what happened?"
+- Recommended day structure:
+  * Days 1-3: Core technical foundations, close high-severity gaps
+  * Days 4-6: Applied practice (coding + system design)
+  * Days 7-8: Behavioral prep + mock interviews
+  * Days 9-10: Review weak areas + confidence building
 
-  intention:
-    The specific competency or leadership principle being assessed. Name it precisely.
-    Example: "Assesses psychological safety, ability to escalate constructively, 
-               and how the candidate handles being overruled."
+**6. title (string)**
+Extract the exact job title from the job description.
 
-  answer:
-    A full STAR-method response, 200–350 words, plausibly drawn from the candidate's 
-    actual resume background. Include:
-    • Situation: specific, not vague
-    • Task: candidate's personal responsibility
-    • Action: at least 3 concrete steps taken
-    • Result: quantified or clearly demonstrable outcome
-    • Reflection: what the candidate learned / would do differently
-    The story must feel like it could actually have happened in this person's career.
-
-=== SECTION 4: skillGaps (array of objects) ===
-
-Derived DIRECTLY from the Gap Matrix in the Pre-Analysis phase.
-Only include gaps for skills that are EXPLICITLY required or strongly implied by THIS JD.
-Do not include generic tech skills unless the JD specifically calls for them.
-
-Each object must have:
-  skill:
-    Be surgical. Not "Cloud experience" — say "Multi-region failover configuration on AWS RDS".
-    Not "Communication" — say "Executive stakeholder reporting for capital expenditure proposals".
-
-  severity:
-    'High'   = Required by JD, completely absent from candidate profile. Blocking gap.
-    'Medium' = Required by JD, partially present or inferred from adjacent experience.
-    'Low'    = Preferred by JD, absent from profile. Minor competitive disadvantage.
-
-  context:
-    One sentence explaining WHY this gap matters for this specific role.
-    Example: "The JD requires daily use of [Tool X] for [Workflow Y], which does not appear 
-              anywhere in the candidate's resume or self-description."
-
-=== SECTION 5: preparationPlan (array of 7–10 day objects) ===
-
-Design a realistic plan for a working professional with 2–4 hours per day.
-Every task must be SPECIFIC and ACTIONABLE — not "study X" or "practice Y".
-
-Day structure template:
-  Days 1–3:   Close High-severity skill gaps. Hard technical focus.
-  Days 4–6:   Applied practice — coding challenges, case studies, mock system design.
-  Days 7–8:   Behavioral prep — STAR story bank, mock interviews, answer refinement.
-  Days 9–10:  Weakness review + confidence calibration + logistics prep.
-
-Each day object must have:
-  day:    integer (5–20)
-  focus:  A sharp topic label (e.g., "Distributed Systems Fundamentals + Write-Heavy DB Design")
-tasks: Array of 3–5 strings. Each string must be a single, self-contained, 
-actionable sentence that embeds the WHAT, HOW, and SUCCESS CRITERION inline.
-
-Each task string must follow this pattern:
-"[Action verb] [specific concept/tool] by [format/method] — success = [measurable goal]"
-
-Examples of CORRECT task strings:
-  "Diagram a multi-tenant auth flow using JWT + refresh tokens in a drawing tool — 
-   success = can explain every node without notes"
-  
-  "Record yourself answering 'Tell me about a time you missed a deadline' using STAR 
-   in under 2.5 minutes — re-record until zero filler words remain"
-  
-  "Write a working SQL query with window functions (RANK, LAG) on a mock sales dataset 
-   — success = query runs and returns correct ranked results"
-
-WRONG (do NOT output objects, nested keys, or JSON inside tasks):
-  { task: "...", format: "...", goal: "..." }   ← NEVER do this
-  ["item1", "item2"]                            ← tasks must be strings, not arrays
-
-=== SECTION 6: title (string) ===
-Extract the verbatim job title from the job description. Do not paraphrase.
-
-=== SECTION 7: resumeAnalysis (object) ===
-
-Perform a ruthless ATS + human reviewer audit. Imagine you are a skeptical senior hiring 
-manager actively looking for reasons to deprioritize this candidate.
-
-  matchedKeywords (array of strings):
-    Every technical skill, tool, certification, methodology, and industry phrase from the JD 
-    that is EXPLICITLY AND CLEARLY present in the resume.
-    Rules:
-    • Use the EXACT string as it appears in the resume (case-sensitive where relevant)
-    • Do NOT include inferred or implied skills — only explicit matches
-    • Do NOT include soft skills unless the JD specifically phrases them as requirements
-    • Include version numbers if the JD specifies them and the resume matches
-
-  missingKeywords (array of strings — minimum 10, no maximum):
-    Every technical skill, tool, certification, methodology, or credential the JD requires 
-    or strongly prefers that is COMPLETELY ABSENT from the resume and self-description.
-    Rules:
-    • Be specific: "ISO 13485 quality management certification" not "quality certification"
-    • Do NOT fabricate matches — if in doubt, it's MISSING
-    • Do NOT include generic tech skills unless THIS JD explicitly requires them
-    • Prioritize by JD emphasis (most-emphasized missing skills listed first)
+**7. resumeAnalysis (object)**
+Perform a CRITICAL, RUTHLESS ATS-style keyword analysis. Imagine you are a senior hiring manager looking for reasons TO REJECT the candidate:
+- matchedKeywords: Detect EVERY technical skill, tool, certification, and industry-standard phrase from the JD that is EXPLICITLY present in the resume. Return the EXACT string as it appears in the resume. 
+- missingKeywords: Identify the 15+ MOST CRITICAL technical skills, softwares, or requirements from the JD that are COMPLETELY ABSENT from the candidate's profile. 
+- BE SPECIFIC: Use "[Specific Software/Standard Name]", not just "[Generic Category]".
+- DO NOT hallucinate matches. If it's not in the resume, it's MISSING.
+- DO NOT return generic tech keywords (e.g., "Kubernetes", "React", "Unit Testing") unless they are EXPLICITLY required by the Job Description provided.
 
 === OUTPUT FORMAT ===
-
-Return ONLY valid, raw JSON. No markdown. No code fences. No preamble. No explanation.
-All arrays must be populated. Empty arrays are NEVER acceptable.
-
+Respond with ONLY valid JSON matching this schema. No markdown, no code blocks, just raw JSON.
+CRITICAL: ALL arrays (technicalQuestions, behavioralQuestions, skillGaps, preparationPlan, matchedKeywords, missingKeywords) MUST be populated. NO empty arrays allowed unless matchScore is 100% or 0% respectively.
 ${JSON.stringify(jsonSchema, null, 2)}
 
-=== FINAL QUALITY CHECKLIST (verify before outputting) ===
-  ✓ matchScore is a non-round number derived from the weighted formula
-  ✓ matchScore is NOT 85, 80, 75, 70, 65, 60, or 50
-  ✓ technicalQuestions has 12+ entries with 200+ word answers
-  ✓ behavioralQuestions has 12+ entries with 200+ word answers
-  ✓ Every skillGap includes a context field
-  ✓ preparationPlan has 7–10 days with 3–5 specific tasks each
-  ✓ matchedKeywords contains only EXPLICIT resume matches
-  ✓ missingKeywords contains at least 10 entries specific to THIS JD
-  ✓ All content is tailored to THIS candidate and THIS job — zero generic filler`;
+CRITICAL REMINDERS:
+- technicalQuestions and behavioralQuestions must EACH have at least 12 entries
+- Every answer must be 200+ words, detailed and actionable
+- preparationPlan must have 7-10 days with 3-5 specific tasks each
+- All content must be tailored to THIS specific candidate and THIS specific job`;
 
   const response = await ai.chat.completions.create({
     model: aiModel || "meta-llama/llama-4-scout-17b-16e-instruct",
