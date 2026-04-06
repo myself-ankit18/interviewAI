@@ -6,6 +6,8 @@ const otpModel = require("../models/otp.model")
 const { sendOtpEmail } = require("../services/email.service")
 const crypto = require("crypto")
 
+const isProduction = process.env.NODE_ENV === "production";
+
 // EMAIL VALIDATION REGEX (RFC 5322 simplified):
 // - Checks for: local-part@domain.tld
 // - local-part: allows letters, digits, dots, hyphens, underscores, plus signs
@@ -217,7 +219,12 @@ async function registerUserController(req, res) {
         isVerified: true  // Email was verified via OTP before reaching this point
     })
     const token = jwt.sign({id: user._id, username: user.username}, process.env.JWT_SECRET, {expiresIn: "1d"})
-    res.cookie("token", token);
+    res.cookie("token", token, {
+    httpOnly: true,
+    secure: isProduction,               // Secure (HTTPS) on production
+    sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-domain prod
+    maxAge: 24 * 60 * 60 * 1000         // 1 day
+});
     return res.status(201).json({
         success: true,
         message: "User registered successfully",
@@ -264,7 +271,12 @@ async function loginUserController(req, res) {
         })
     }
     const token = jwt.sign({id: user._id, username: user.username}, process.env.JWT_SECRET, {expiresIn: "1d"})
-    res.cookie("token", token);
+    res.cookie("token", token, {
+    httpOnly: true,
+    secure: isProduction,               // Secure (HTTPS) on production
+    sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-domain prod
+    maxAge: 24 * 60 * 60 * 1000         // 1 day
+});
     return res.status(200).json({
         success: true,
         message: "User logged in successfully",
