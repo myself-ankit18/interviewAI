@@ -1,5 +1,14 @@
 export const groqModels = [
     {
+        id: "moonshotai/kimi-k2-instruct-0905",
+        name: "Kimi K2 Instruct",
+        developer: "Moonshot AI",
+        max_tokens: 8192,
+        isFree: true,
+        recommended: true,
+        tags: ["Creative"]
+    },
+    {
         id: "llama-3.3-70b-versatile",
         name: "LLaMA 3.3 (70B Versatile)",
         developer: "Meta",
@@ -25,14 +34,5 @@ export const groqModels = [
         isFree: true,
         recommended: false,
         tags: ["Lightning Fast"]
-    },
-    {
-        id: "moonshotai/kimi-k2-instruct-0905",
-        name: "Kimi K2 Instruct",
-        developer: "Moonshot AI",
-        max_tokens: 8192,
-        isFree: true,
-        recommended: false,
-        tags: ["Creative"]
     },
 ];
