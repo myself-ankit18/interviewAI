@@ -245,7 +245,7 @@ DO NOT generate generic textbook questions. Examples of BAD vs GOOD:
 - BAD: "Explain [Generic Concept]" → GOOD: "You're tasked with optimizing [Specific System/Process from JD] which is currently underperforming by [Metric]. Walk me through your diagnostic process, what tools or standards you'd apply, and how you'd validate the solution."
 
 **3. behavioralQuestions (array of 12+ objects)**
-Generate questions covering a wide range of competencies (Leadership, Failure, Conflict, Ownership, etc.).
+Generate 10 to 15 questions covering a wide range of competencies (Leadership, Failure, Conflict, Ownership, etc.).
 
 Each object MUST have these EXACT properties:
 - question: Natural conversational phrasing (not robotic)
