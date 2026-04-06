@@ -290,32 +290,80 @@ Target Job Description: ${jobDescription}
 Respond with a JSON object with a single 'html' field containing the complete HTML resume.
 Schema: ${JSON.stringify(zodToJsonSchema(resumePdfSchema), null, 2)}`;
 
-    const response = await ai.chat.completions.create({
-        model: aiModel || "moonshotai/kimi-k2-instruct-0905",
-        messages: [{
-            role: "system",
-            content: "You are an expert resume writer. You produce ATS-optimized, professionally written resumes that get candidates interviews at top companies. Always output valid JSON with an 'html' field."
-        }, {
-            role: "user",
-            content: prompt
-        }],
-        temperature: 0.3,
-        max_tokens: 6000,
-        response_format: { type: "json_object" }
-    })
-    
-    const jsonResponse = JSON.parse(response.choices[0].message.content);
-    const pdf = await convertHTMLToPDF(jsonResponse.html);
-    return { pdf, html: jsonResponse.html };
+    try {
+        console.log(`AI Synthesis initiated with model: ${aiModel || "llama-3.3-70b-versatile"}`);
+        
+        let response = await ai.chat.completions.create({
+            model: aiModel || "llama-3.3-70b-versatile",
+            messages: [{
+                role: "system",
+                content: "You are an expert professional resume writer. You MUST produce the resume in HTML format. Your JSON response MUST include a non-empty 'html' string field. Do NOT return null."
+            }, {
+                role: "user",
+                content: prompt
+            }],
+            temperature: 0.3,
+            max_tokens: 6000,
+            response_format: { type: "json_object" }
+        });
+        
+        let content = response.choices[0].message.content;
+        let jsonResponse = JSON.parse(content);
+
+        // FALLBACK MECHANISM: If the selected model (e.g. Kimi or Llama 4 Scout) returns null for HTML,
+        // we'll automatically try the most powerful/stable model (Llama 3.3 70B) to ensure the user gets their resume.
+        if (!jsonResponse || !jsonResponse.html || jsonResponse.html === null) {
+            console.warn(`Primary model ${aiModel} failed or returned null HTML. Triggering fallback to llama-3.3-70b-versatile...`);
+            
+            response = await ai.chat.completions.create({
+                model: "llama-3.3-70b-versatile",
+                messages: [{
+                    role: "system",
+                    content: "You are an expert resume writer. You produce ATS-optimized, professionally written resumes that get candidates interviews at top companies. Always output valid JSON with an 'html' field."
+                }, {
+                    role: "user",
+                    content: prompt
+                }],
+                temperature: 0.25,
+                max_tokens: 6000,
+                response_format: { type: "json_object" }
+            });
+            
+            content = response.choices[0].message.content;
+            jsonResponse = JSON.parse(content);
+        }
+
+        if (!jsonResponse || !jsonResponse.html) {
+            console.error("Critical: Both primary model and fallback failed to generate HTML.");
+            throw new Error("AI engine failed to synthesize resume content. Please try again later or with a different resume.");
+        }
+
+        console.log("Successfully synthesized resume HTML. Converting to PDF...");
+        const pdf = await convertHTMLToPDF(jsonResponse.html);
+        return { pdf, html: jsonResponse.html };
+    } catch (error) {
+        console.error("Error in generateResumePDF service:", error);
+        throw error;
+    }
 }
 
 async function convertHTMLToPDF(htmlContent){
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-    const pdf = await page.pdf({ format: 'A4' });
-    await browser.close();
-    return pdf;
+    let browser;
+    try {
+        browser = await puppeteer.launch({
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            headless: true
+        });
+        const page = await browser.newPage();
+        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+        const pdf = await page.pdf({ format: 'A4' });
+        return pdf;
+    } catch (err) {
+        console.error("Puppeteer PDF conversion failed:", err);
+        throw new Error("Failed to convert resume to PDF. System engine error.");
+    } finally {
+        if (browser) await browser.close();
+    }
 }
 
 async function generateProjectIdeas({skillGaps, jobDescription, aiModel}){

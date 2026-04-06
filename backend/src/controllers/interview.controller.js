@@ -101,43 +101,61 @@ async function getAllInterviewReportsController(req, res) {
 
 // controller for generating resume PDF using AI
 async function generateResumePDFController(req, res) {
-    const {interviewId} = req.params;   
-    const { aiModel } = req.body;
-    const interviewReport = await interviewReportModel.findOne({ _id: interviewId, user: req.user.id });
+    try {
+        const { interviewId } = req.params;
+        const { aiModel } = req.body;
+        const interviewReport = await interviewReportModel.findOne({ _id: interviewId, user: req.user.id });
 
-    if (!interviewReport) {
-        return res.status(404).json({
+        if (!interviewReport) {
+            return res.status(404).json({
+                success: false,
+                message: "Interview report not found"
+            });
+        }
+
+        // RESTRICTION: Check if this model has already been used to generate a resume for this report.
+        const existingResume = interviewReport.enhancedResumes?.find(r => r.aiModel === aiModel);
+        if (existingResume) {
+            return res.status(400).json({
+                success: false,
+                message: `You have already generated a professional resume using ${aiModel}. Please access it from your history or choose a different AI agent.`
+            });
+        }
+
+        const result = await generateResumePDF({
+            resume: interviewReport.resume,
+            selfDescription: interviewReport.selfDescription,
+            jobDescription: interviewReport.jobDescription,
+            aiModel
+        });
+
+        if (!result || !result.html) {
+            console.error("AI failed to generate HTML content for resume.");
+            return res.status(500).json({
+                success: false,
+                message: "AI agent failed to synthesize your resume. Please try a different model or try again later."
+            });
+        }
+
+        const { pdf, html } = result;
+
+        // Persistent Storage: Save the generated HTML content to the history array.
+        interviewReport.enhancedResumes.push({
+            aiModel,
+            htmlContent: html
+        });
+        await interviewReport.save();
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename="resume.pdf"');
+        return res.status(200).send(pdf);
+    } catch (error) {
+        console.error("Error in generateResumePDFController:", error);
+        return res.status(500).json({
             success: false,
-            message: "Interview report not found"
+            message: error.message || "Failed to generate resume PDF. Please try again."
         });
     }
-
-    // RESTRICTION: Check if this model has already been used to generate a resume for this report.
-    const existingResume = interviewReport.enhancedResumes?.find(r => r.aiModel === aiModel);
-    if (existingResume) {
-        return res.status(400).json({
-            success: false,
-            message: `You have already generated a professional resume using ${aiModel}. Please access it from your history or choose a different AI agent.`
-        });
-    }
-
-    const { pdf, html } = await generateResumePDF({
-        resume: interviewReport.resume,
-        selfDescription: interviewReport.selfDescription,
-        jobDescription: interviewReport.jobDescription,
-        aiModel
-    });
-
-    // Persistent Storage: Save the generated HTML content to the history array.
-    interviewReport.enhancedResumes.push({
-        aiModel,
-        htmlContent: html
-    });
-    await interviewReport.save();
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="resume.pdf"');
-    return res.status(200).send(pdf);
 }
 
 // Controller to download a previously generated resume from the history
