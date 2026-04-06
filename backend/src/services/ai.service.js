@@ -732,26 +732,125 @@ async function generateProjectIdeas({ skillGaps, jobDescription, aiModel }) {
       .describe("2-3 portfolio-ready side project ideas"),
   });
 
-  const prompt = `You are a senior engineering manager who reviews portfolios and side projects when hiring. Based on the candidate's skill gaps and the target job, suggest 2-3 SPECIFIC, portfolio-ready side project ideas that would:
-1. Help the candidate learn the missing skills
-2. Look impressive on their portfolio/GitHub
-3. Be completable in 1-3 weeks by a motivated developer
+  const prompt = `You are a senior engineering manager and technical hiring lead with 15+ years of experience 
+evaluating developer portfolios at top-tier companies. You have rejected thousands of 
+"todo app" and "weather widget" projects, and you know exactly what makes a side project 
+stand out in a hiring review versus what gets scrolled past in 3 seconds.
 
-=== SKILL GAPS ===
+Your job: Recommend 2–3 portfolio projects that are GENUINELY impressive, directly close 
+the candidate's most critical skill gaps, and are realistically completable in 1–3 weeks 
+by a motivated developer. These must be projects you yourself would pause on while 
+reviewing a GitHub profile.
+
+=== INPUTS ===
+
+Skill Gaps:
 ${JSON.stringify(skillGaps, null, 2)}
 
-=== TARGET JOB DESCRIPTION ===
+Target Job Description:
 ${jobDescription}
 
-=== REQUIREMENTS ===
-- Each project must directly address at least 2 of the High/Medium severity skill gaps
-- Projects should be REAL, useful applications (not toy demos)
-- Include specific tech stack choices that match the job requirements
-- Make projects progressively harder (one beginner-friendly, one intermediate, one advanced)
-- Each project should be something the candidate can demo in an interview
-- Include key features that would showcase the skills being learned
+=== PRE-ANALYSIS — COMPLETE BEFORE GENERATING PROJECTS ===
 
-Respond with valid JSON matching this schema exactly. CRITICAL: NO empty arrays and NO missing fields. Do not omit 'title', 'difficulty', 'estimatedTime', 'skillsCovered', 'keyFeatures', or 'whyItImpresses'.
+Step 1 — Identify the 3–5 most damaging skill gaps (High severity first, then Medium).
+Step 2 — Identify the exact tech stack keywords the JD emphasizes most.
+Step 3 — For each project idea, verify it closes at least 2 High/Medium gaps AND uses 
+          at least 2 JD-emphasized technologies. If not, discard and ideate again.
+Step 4 — Rank projects by difficulty: Beginner-Friendly → Intermediate → Advanced.
+          Each must be meaningfully harder than the previous.
+
+=== PROJECT GENERATION RULES ===
+
+RULE 1 — NO TOY PROJECTS
+Banned concepts (these are instant portfolio killers):
+  • Todo apps, note-taking apps, weather apps, calculator apps
+  • "Basic CRUD" apps with no real business logic
+  • Tutorial clones with a different color scheme
+  • Anything described as "simple [X] app"
+
+Every project must solve a REAL problem that a real user or business would care about.
+Ask yourself: "Would someone actually use this?" — if not, redesign it.
+
+RULE 2 — INTERVIEW DEMO-ABILITY
+Each project must have at least one "wow moment" — a feature the candidate can demo 
+live in a 5-minute interview screen share that makes the interviewer lean forward.
+Examples of wow moments:
+  • A real-time feature that updates without page refresh
+  • A dashboard that visualizes complex data in an insightful way
+  • An AI/ML feature that produces a visible, non-trivial output
+  • A performance benchmark showing measurable optimization
+  • A multi-user feature with live collaboration
+
+RULE 3 — GAP COVERAGE IS MANDATORY
+Each project MUST directly address at least 2 High or Medium severity skill gaps 
+from the provided list. Name the gaps explicitly in skillsCovered.
+Do NOT suggest projects that only cover Low severity gaps.
+
+RULE 4 — TECH STACK ALIGNMENT
+Use the exact technology names from the job description (e.g., "React.js" not "React",
+"PostgreSQL" not "Postgres" if that's what the JD says).
+Every item in techStack must appear in either the JD or the skill gaps list.
+Do NOT pad the tech stack with trendy tools not relevant to the role.
+
+RULE 5 — PROGRESSIVE DIFFICULTY
+Project 1 (Beginner-Friendly): 
+  Completable in 5–7 days. Focused scope. 1–2 new technologies.
+  Best for: Building foundational confidence with the most critical gap.
+  
+Project 2 (Intermediate): 
+  Completable in 1–2 weeks. Multiple integrated systems. 3–4 technologies.
+  Best for: Demonstrating applied, full-stack thinking.
+  
+Project 3 (Advanced): 
+  Completable in 2–3 weeks. Production-grade architecture. 4+ technologies.
+  Best for: Differentiating the candidate from other applicants.
+  Should include: CI/CD, testing, deployment, or performance optimization.
+
+RULE 6 — SPECIFICITY OVER GENERALITY
+Bad title:    "E-commerce Platform"
+Good title:   "Multi-Vendor Marketplace with Real-Time Inventory Sync and Stripe Connect Payouts"
+
+Bad feature:  "User authentication"
+Good feature: "JWT-based auth with refresh token rotation and device session management"
+
+Bad whyItImpresses: "Shows you can build full-stack apps"
+Good whyItImpresses: "Demonstrates understanding of distributed state management and 
+                       event-driven architecture — directly mirrors the infrastructure 
+                       described in the job description."
+
+=== OUTPUT SCHEMA RULES ===
+
+Each project object MUST contain ALL of these fields — no exceptions, no omissions:
+
+  title (string):
+    Specific, descriptive, portfolio-worthy. Not generic. Reads like a real product name.
+
+  description (string, 2–4 sentences):
+    What it does, who it's for, and what technical challenge it solves.
+    Must convey genuine product thinking, not just technology listing.
+
+  difficulty (string):
+    Exactly one of: "Beginner-Friendly" | "Intermediate" | "Advanced"
+
+  estimatedTime (string):
+    Realistic for a working developer. Format: "X days" or "X–Y weeks"
+
+  techStack (array of strings):
+    3–6 items. Exact names from the JD. No padding.
+
+  skillsCovered (array of strings):
+    3–5 items. Must map directly to skill gap names from the input.
+    Use the EXACT skill names from the skillGaps input where possible.
+
+  keyFeatures (array of strings, minimum 4 items):
+    Specific, technical, demo-able features. Each one should be a complete sentence.
+    At least one must be the "wow moment" feature described in Rule 2.
+    No vague entries like "user login" or "database integration".
+
+  whyItImpresses (string, 2–3 sentences):
+    Written as if you're the hiring manager explaining to your team why this project 
+    stands out. Reference the specific role, the skill gaps it closes, and the 
+    interview signal it sends. Make it compelling.
 
 EXAMPLE OUTPUT:
 {
