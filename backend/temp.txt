@@ -1,7 +1,0 @@
-aparnadam1981_db_user
-FSpLW4BQ8AxJgZHk
-mongodb+srv://aparnadam1981_db_user:FSpLW4BQ8AxJgZHk@interview-ai-cluster.rib3ucg.mongodb.net/\
-mongodb+srv://aparnadam1981_db_user:FSpLW4BQ8AxJgZHk@interview-ai-cluster.rib3ucg.mongodb.net/interview-master
-
-MymVMs2cc5zejEYd
-mongodb+srv://ankit18:MymVMs2cc5zejEYd@interview-ai-cluster.rib3ucg.mongodb.net/
