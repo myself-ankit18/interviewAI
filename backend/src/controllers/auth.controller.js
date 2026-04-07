@@ -2,192 +2,22 @@ const userModel = require("../models/user.model")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const tokenBlacklistModel = require("../models/blacklist.model")
-const otpModel = require("../models/otp.model")
-const { sendOtpEmail } = require("../services/email.service")
-const crypto = require("crypto")
+const crypto = require("crypto") 
 
 const isProduction = process.env.NODE_ENV === "production";
 
-// EMAIL VALIDATION REGEX (RFC 5322 simplified):
-// - Checks for: local-part@domain.tld
-// - local-part: allows letters, digits, dots, hyphens, underscores, plus signs
-// - domain: must have at least one dot (e.g., gmail.com, mail.co.uk)
-// - TLD: must be at least 2 characters (rejects things like user@domain.x)
-// This runs on the server as a security backstop — frontend validation alone
-// can be bypassed by API calls or browser dev tools.
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-// ─── REGISTRATION EMAIL OTP FLOW ─────────────────────────────────────────────
-// Before a user can register, they must prove they own the email address.
-// Flow: User enters email on Register page → frontend auto-sends OTP on blur →
-// OTP input slides in → user enters 6 digits → auto-verified → form unlocks.
-//
-// Two new endpoints power this:
-// 1. /send-registration-otp — Validates email isn't taken, generates OTP, emails it
-// 2. /verify-registration-otp — Compares OTP, returns verified=true if correct
-
-async function sendRegistrationOtpController(req, res) {
-    const { email } = req.body;
-
-    // Validate email was provided
-    if (!email) {
-        return res.status(400).json({
-            success: false,
-            message: "Email is required"
-        })
-    }
-
-    // EMAIL FORMAT VALIDATION: Reject malformed emails before doing any DB work
-    if (!EMAIL_REGEX.test(email)) {
-        return res.status(400).json({
-            success: false,
-            message: "Invalid email format"
-        })
-    }
-
-    // Check if email is already registered to prevent duplicate accounts.
-    // This runs BEFORE creating the user, so no user document exists yet —
-    // we're just checking if someone already registered with this email.
-    const existingUser = await userModel.findOne({ email });
-    if (existingUser) {
-        return res.status(400).json({
-            success: false,
-            message: "This email is already registered. Please login instead."
-        })
-    }
-
-    // Delete any existing OTPs for this email (cleanup from previous attempts)
-    await otpModel.deleteMany({ email });
-
-    // GENERATE OTP: crypto.randomInt provides cryptographically secure random numbers.
-    // Range 100000–999999 guarantees exactly 6 digits.
-    const otp = crypto.randomInt(100000, 999999).toString();
-
-    // HASH THE OTP before storing (same security principle as passwords)
-    const hashedOtp = await bcrypt.hash(otp, 10);
-
-    // Store hashed OTP with TTL auto-expiry (10 minutes, configured in otp.model.js)
-    await otpModel.create({
-        email,
-        otp: hashedOtp
-    });
-
-    // Send the PLAIN OTP to the user's inbox
-    try {
-        await sendOtpEmail(email, otp, "registration");  // "registration" → email says "Verify Your Email"
-    } catch (error) {
-        console.error("Failed to send registration OTP email:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to send OTP email. Please check your email address and try again."
-        })
-    }
-
-    return res.status(200).json({
-        success: true,
-        message: "OTP sent to your email address"
-    })
-}
-
-async function verifyRegistrationOtpController(req, res) {
-    const { email, otp } = req.body;
-
-    if (!email || !otp) {
-        return res.status(400).json({
-            success: false,
-            message: "Email and OTP are required"
-        })
-    }
-
-    // Find the most recent OTP for this email
-    const otpRecord = await otpModel.findOne({ email }).sort({ createdAt: -1 });
-
-    if (!otpRecord) {
-        return res.status(400).json({
-            success: false,
-            message: "OTP has expired or was not found. Please request a new one."
-        })
-    }
-
-    // COMPARE: bcrypt.compare checks user-supplied OTP against the hashed version
-    const isOtpValid = await bcrypt.compare(otp, otpRecord.otp);
-
-    if (!isOtpValid) {
-        return res.status(400).json({
-            success: false,
-            message: "Invalid OTP",
-            verified: false
-        })
-    }
-
-    // OTP is valid — delete it (single-use, prevents replay attacks)
-    await otpModel.deleteMany({ email });
-
-    // Return verified=true. The frontend will use this to unlock the rest of the form.
-    // We do NOT create the user here — that happens in registerUserController
-    // when the user submits the full form.
-    return res.status(200).json({
-        success: true,
-        message: "Email verified successfully",
-        verified: true
-    })
-}
-async function deleteAccountController(req, res){
-    try {
-        const { password } = req.body;
-        if(!password){
-            return res.status(400).json({
-                success: false,
-                message: "Password is required for termination verification."
-            })
-        }
-        const user = await userModel.findById(req.user.id);
-        if(!user){
-            return res.status(404).json({
-                success: false,
-                message: "Operative record not found"
-            })
-        }
-        
-        // VERIFY PASSWORD: Use bcrypt to compare the provided candidate password
-        // with the hashed password stored in the database.
-        const isMatch = await bcrypt.compare(password, user.password);
-        if(!isMatch){
-            return res.status(401).json({
-                success: false,
-                message: "Invalid credentials. Protocol termination denied."
-            })
-        }
-
-        await userModel.findByIdAndDelete(user._id);
-
-        res.clearCookie('token'); // Clear the auth cookie on deletion
-
-        return res.status(200).json({
-            success: true,
-            message: "Account and associated tactical records purged successfully."
-        })
-    } catch (error) {
-        console.error('Error during account deletion:', error);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to purge operative records. System anomaly detected."
-        })
-    }
-}
 // ─── REGISTER ─────────────────────────────────────────────────────────────────
 async function registerUserController(req, res) {
-    const {username, email, password} = req.body;
-    if(!username || !email || !password) {
+    const {username, email, password, securityQuestion, securityAnswer} = req.body;
+    if(!username || !email || !password || !securityQuestion || !securityAnswer) {
         return res.status(400).json({
             success: false,
             message: "All fields are required"
         })
     }
 
-    // EMAIL VALIDATION: Server-side check ensures only properly formatted
-    // emails are stored in the database. This prevents garbage data even if
-    // someone bypasses the frontend validation (e.g., via Postman or curl).
     if (!EMAIL_REGEX.test(email)) {
         return res.status(400).json({
             success: false,
@@ -201,30 +31,34 @@ async function registerUserController(req, res) {
             {email}
         ]
     })
+    
     if(isUserAlreadyExist) {
         return res.status(400).json({
             success: false,
             message: "User already exists"
         })
     }
+    
     const hash = await bcrypt.hash(password, 10);
+    const hashedSecurityAnswer = await bcrypt.hash(securityAnswer.toLowerCase().trim(), 10);
 
-    // CREATE USER WITH isVerified=true: By the time this controller runs,
-    // the email has already been verified via the inline OTP flow on the
-    // Register page. So we mark the user as verified immediately.
     const user = await userModel.create({
         username,
         email,
         password: hash,
-        isVerified: true  // Email was verified via OTP before reaching this point
+        securityQuestion,
+        securityAnswer: hashedSecurityAnswer
     })
+    
     const token = jwt.sign({id: user._id, username: user.username}, process.env.JWT_SECRET, {expiresIn: "1d"})
+    
     res.cookie("token", token, {
-    httpOnly: true,
-    secure: isProduction,               // Secure (HTTPS) on production
-    sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-domain prod
-    maxAge: 24 * 60 * 60 * 1000         // 1 day
-});
+        httpOnly: true,
+        secure: isProduction,               
+        sameSite: isProduction ? 'none' : 'lax', 
+        maxAge: 24 * 60 * 60 * 1000         // 1 day
+    });
+    
     return res.status(201).json({
         success: true,
         message: "User registered successfully",
@@ -245,21 +79,12 @@ async function loginUserController(req, res) {
             message: "All fields are required"
         })
     }
+    
     const user = await userModel.findOne({email})
     if(!user) {
         return res.status(400).json({
             success: false,
             message: "Invalid credentials"
-        })
-    }
-
-    // VERIFICATION CHECK: If the user registered but never completed email
-    // verification (e.g., they closed the browser mid-registration), block login.
-    // This ensures only verified email owners can access the app.
-    if (!user.isVerified) {
-        return res.status(403).json({
-            success: false,
-            message: "Email not verified. Please register again to verify your email."
         })
     }
 
@@ -270,13 +95,16 @@ async function loginUserController(req, res) {
             message: "Invalid credentials"
         })
     }
+    
     const token = jwt.sign({id: user._id, username: user.username}, process.env.JWT_SECRET, {expiresIn: "1d"})
+    
     res.cookie("token", token, {
-    httpOnly: true,
-    secure: isProduction,               // Secure (HTTPS) on production
-    sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-domain prod
-    maxAge: 24 * 60 * 60 * 1000         // 1 day
-});
+        httpOnly: true,
+        secure: isProduction,               
+        sameSite: isProduction ? 'none' : 'lax', 
+        maxAge: 24 * 60 * 60 * 1000         // 1 day
+    });
+    
     return res.status(200).json({
         success: true,
         message: "User logged in successfully",
@@ -318,22 +146,11 @@ async function getMeController(req, res) {
     })
 }
 
-// ─── FORGOT PASSWORD FLOW ─────────────────────────────────────────────────────
-// The forgot password system uses a 3-step process:
-// Step 1: User provides email → server generates OTP, hashes it, stores in DB, sends plain OTP via email
-// Step 2: User enters OTP → server verifies against hashed copy → issues a short-lived reset token
-// Step 3: User provides new password + reset token → server validates token and updates password
-//
-// Security measures:
-// - OTPs are hashed with bcrypt before storage (same as passwords)
-// - OTPs auto-expire after 10 minutes via MongoDB TTL index
-// - Reset tokens expire after 5 minutes (very short window)
-// - Previous OTPs for same email are deleted before creating new one (prevents brute-force)
+// ─── FORGOT PASSWORD FLOW (SECURITY QUESTIONS) ─────────────────────────────────────────────────────
 
-async function forgotPasswordController(req, res) {
+async function getSecurityQuestionController(req, res) {
     const { email } = req.body;
 
-    // Validate that email was provided
     if (!email) {
         return res.status(400).json({
             success: false,
@@ -341,7 +158,6 @@ async function forgotPasswordController(req, res) {
         })
     }
 
-    // Check if the email exists in our database.
     const user = await userModel.findOne({ email });
     if (!user) {
         return res.status(400).json({
@@ -350,68 +166,46 @@ async function forgotPasswordController(req, res) {
         })
     }
 
-    // Delete any existing OTPs for this email
-    await otpModel.deleteMany({ email });
-
-    // GENERATE OTP: crypto.randomInt provides cryptographically secure random numbers.
-    const otp = crypto.randomInt(100000, 999999).toString();
-
-    // HASH THE OTP before storing
-    const hashedOtp = await bcrypt.hash(otp, 10);
-
-    // Store the hashed OTP with TTL auto-expiry
-    await otpModel.create({
-        email,
-        otp: hashedOtp
-    });
-
-    // Send the PLAIN OTP to the user's email
-    try {
-        await sendOtpEmail(email, otp);
-    } catch (error) {
-        console.error("Failed to send OTP email:", error);
-        return res.status(500).json({
+    if (!user.securityQuestion) {
+        return res.status(400).json({
             success: false,
-            message: "Failed to send OTP email. Please try again later."
+            message: "This account does not have a security question set. Please contact support."
         })
     }
 
     return res.status(200).json({
         success: true,
-        message: "OTP sent to your email address"
+        message: "Security question retrieved",
+        securityQuestion: user.securityQuestion
     })
 }
 
-async function verifyOtpController(req, res) {
-    const { email, otp } = req.body;
+async function verifySecurityAnswerController(req, res) {
+    const { email, securityAnswer } = req.body;
 
-    if (!email || !otp) {
+    if (!email || !securityAnswer) {
         return res.status(400).json({
             success: false,
-            message: "Email and OTP are required"
+            message: "Email and security answer are required"
         })
     }
 
-    const otpRecord = await otpModel.findOne({ email }).sort({ createdAt: -1 });
-
-    if (!otpRecord) {
+    const user = await userModel.findOne({ email });
+    if (!user) {
         return res.status(400).json({
             success: false,
-            message: "OTP has expired or is invalid. Please request a new one."
+            message: "User not found"
         })
     }
 
-    const isOtpValid = await bcrypt.compare(otp, otpRecord.otp);
+    const isAnswerValid = await bcrypt.compare(securityAnswer.toLowerCase().trim(), user.securityAnswer);
 
-    if (!isOtpValid) {
+    if (!isAnswerValid) {
         return res.status(400).json({
             success: false,
-            message: "Invalid OTP. Please check and try again."
+            message: "Incorrect answer. Please try again."
         })
     }
-
-    // OTP is valid — delete it immediately to prevent reuse
-    await otpModel.deleteMany({ email });
 
     // ISSUE A RESET TOKEN: Short-lived JWT (5 minutes) that authorizes password reset
     const resetToken = jwt.sign(
@@ -422,7 +216,7 @@ async function verifyOtpController(req, res) {
 
     return res.status(200).json({
         success: true,
-        message: "OTP verified successfully",
+        message: "Answer verified successfully",
         resetToken
     })
 }
@@ -450,7 +244,7 @@ async function resetPasswordController(req, res) {
     } catch (error) {
         return res.status(400).json({
             success: false,
-            message: "Reset token has expired or is invalid. Please request a new OTP."
+            message: "Reset token has expired or is invalid. Please start over."
         })
     }
 
@@ -479,16 +273,55 @@ async function resetPasswordController(req, res) {
     })
 }
 
+async function deleteAccountController(req, res){
+    try {
+        const { password } = req.body;
+        if(!password){
+            return res.status(400).json({
+                success: false,
+                message: "Password is required for termination verification."
+            })
+        }
+        const user = await userModel.findById(req.user.id);
+        if(!user){
+            return res.status(404).json({
+                success: false,
+                message: "Operative record not found"
+            })
+        }
+        
+        const isMatch = await bcrypt.compare(password, user.password);
+        if(!isMatch){
+            return res.status(401).json({
+                success: false,
+                message: "Invalid credentials. Protocol termination denied."
+            })
+        }
+
+        await userModel.findByIdAndDelete(user._id);
+
+        res.clearCookie('token'); 
+
+        return res.status(200).json({
+            success: true,
+            message: "Account and associated tactical records purged successfully."
+        })
+    } catch (error) {
+        console.error('Error during account deletion:', error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to purge operative records. System anomaly detected."
+        })
+    }
+}
 
 module.exports = {
     registerUserController,
     loginUserController,
     logoutUserController,
     getMeController,
-    forgotPasswordController,
-    verifyOtpController,
+    getSecurityQuestionController,
+    verifySecurityAnswerController,
     resetPasswordController,
-    sendRegistrationOtpController,
-    verifyRegistrationOtpController,
     deleteAccountController
 }

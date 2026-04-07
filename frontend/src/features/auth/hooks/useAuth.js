@@ -30,10 +30,10 @@ export const useAuth = () => {
             setLoading(false);
         }
     };
-    const handleRegister = async ({ username, email, password }) => {
+    const handleRegister = async ({ username, email, password, securityQuestion, securityAnswer }) => {
         setLoading(true);
         try {
-            const data = await register({ username, email, password });
+            const data = await register({ username, email, password, securityQuestion, securityAnswer });
             setUser(data.user);
             return { user: data.user };
         } catch (error) {

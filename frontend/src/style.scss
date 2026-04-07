@@ -1046,3 +1046,24 @@ h1 {
     transform: translateY(0);
   }
 }
+
+// ─── Horizontal Form Layout ───────────────────────────────────────
+.form-row {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+
+  @media (min-width: 640px) {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+
+  label {
+    margin-top: 0; // overrides default label margin if inside row
+  }
+}

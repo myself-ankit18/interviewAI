@@ -4,12 +4,14 @@ const api = axios.create({
     withCredentials: true
 });
 
-export async function register({username, email, password}) {
+export async function register({username, email, password, securityQuestion, securityAnswer}) {
     try{
         const response = await api.post('/api/auth/register', {
             username,
             email,
-            password
+            password,
+            securityQuestion,
+            securityAnswer
         });
         return response.data;
     } catch (error) {
@@ -50,82 +52,28 @@ export async function getMe() {
     }
 }
 
-// ─── REGISTRATION EMAIL OTP VERIFICATION ────────────────────────────────────
-// These 2 functions power the inline, button-free email verification on Register.
-// They are auto-triggered by UI events (blur + 6th digit typed), not by button clicks.
-// They are auto-triggered by UI events (blur + 6th digit typed), not by button clicks.
+// ─── SECURITY QUESTION RECOVERY API FUNCTIONS ───────────────────────────
 
-/**
- * Step 1: Send Registration OTP — auto-called when user blurs the email field.
- * Backend checks if email is already taken, generates OTP, emails it.
- * @param {string} email - The email address to verify
- */
-export async function sendRegistrationOtp(email) {
+export async function getSecurityQuestion(email) {
     try {
-        const response = await api.post('/api/auth/send-registration-otp', { email });
+        const response = await api.post('/api/auth/get-security-question', { email });
         return response.data;
     } catch (error) {
-        console.error('Error sending registration OTP:', error);
-        throw error.response?.data?.message || 'Failed to send verification OTP.';
+        console.error('Error fetching security question:', error);
+        throw error.response?.data?.message || 'Failed to fetch security question.';
     }
 }
 
-/**
- * Step 2: Verify Registration OTP — auto-called when user types the 6th OTP digit.
- * Backend compares OTP, returns { verified: true } if correct.
- * No button click needed — triggers automatically!
- * @param {string} email - The email address being verified
- * @param {string} otp - The 6-digit OTP entered by the user
- * @returns {object} { success, message, verified }
- */
-export async function verifyRegistrationOtp(email, otp) {
+export async function verifySecurityAnswer(email, securityAnswer) {
     try {
-        const response = await api.post('/api/auth/verify-registration-otp', { email, otp });
-        return response.data;
+        const response = await api.post('/api/auth/verify-security-answer', { email, securityAnswer });
+        return response.data; // returns resetToken
     } catch (error) {
-        console.error('Error verifying registration OTP:', error);
-        throw error.response?.data?.message || 'OTP verification failed.';
+        console.error('Error verifying answer:', error);
+        throw error.response?.data?.message || 'Answer verification failed.';
     }
 }
 
-// ─── FORGOT PASSWORD API FUNCTIONS ──────────────────────────────────────
-// These 3 functions correspond to the 3-step forgot password flow on the backend.
-
-/**
- * Step 1: Request OTP — sends a 6-digit OTP to the user's email.
- * @param {string} email - The registered email address to send the OTP to
- */
-export async function forgotPassword(email) {
-    try {
-        const response = await api.post('/api/auth/forgot-password', { email });
-        return response.data;
-    } catch (error) {
-        console.error('Error sending OTP:', error);
-        throw error.response?.data?.message || 'Failed to send OTP.';
-    }
-}
-
-/**
- * Step 2: Verify OTP — checks if the user-entered OTP matches.
- * @param {string} email - The email address associated with the OTP
- * @param {string} otp - The 6-digit OTP entered by the user
- * @returns {object} { success, message, resetToken }
- */
-export async function verifyOtp(email, otp) {
-    try {
-        const response = await api.post('/api/auth/verify-otp', { email, otp });
-        return response.data;
-    } catch (error) {
-        console.error('Error verifying OTP:', error);
-        throw error.response?.data?.message || 'OTP verification failed.';
-    }
-}
-
-/**
- * Step 3: Reset Password — uses the reset token to authorize setting a new password.
- * @param {string} resetToken - The JWT received from verifyOtp
- * @param {string} newPassword - The new password to set
- */
 export async function resetPassword(resetToken, newPassword) {
     try {
         const response = await api.post('/api/auth/reset-password', { resetToken, newPassword });

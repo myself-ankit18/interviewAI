@@ -1,33 +1,24 @@
-// ForgotPassword.jsx — Multi-step password reset flow:
-// Step 1: User enters their registered email → OTP is sent to that email
-// Step 2: User enters the 6-digit OTP from their inbox → verified against server
-// Step 3: User sets a new password (with confirm) → password is updated
-//
-// All 3 steps happen on this single page with smooth transitions between steps.
-// A countdown timer shows how long before the OTP expires (10 minutes).
-// "Resend OTP" becomes available after a 30-second cooldown to prevent spam.
-
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { forgotPassword, verifyOtp, resetPassword } from '../services/auth.api'
+import { getSecurityQuestion, verifySecurityAnswer, resetPassword } from '../services/auth.api'
 
-// Same email regex used in Register.jsx and the backend — consistency across all layers
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 const ForgotPassword = () => {
     const navigate = useNavigate()
 
-    // STEP TRACKER: Controls which form is visible (1 = email, 2 = OTP, 3 = new password)
+    // STEP TRACKER: Controls which form is visible (1 = email, 2 = Answer, 3 = new password)
     const [step, setStep] = useState(1)
 
     // Form fields
     const [email, setEmail] = useState("")
-    const [otp, setOtp] = useState("")
+    const [securityQuestion, setSecurityQuestion] = useState("")
+    const [securityAnswer, setSecurityAnswer] = useState("")
+    
     const [newPassword, setNewPassword] = useState("")
     const [confirmNewPassword, setConfirmNewPassword] = useState("")
 
-    // The reset token received after OTP verification (Step 2).
-    // This JWT authorizes the password reset in Step 3.
+    // The reset token received after security answer verification (Step 2).
     const [resetToken, setResetToken] = useState("")
 
     // UI state
@@ -35,60 +26,11 @@ const ForgotPassword = () => {
     const [errorMsg, setErrorMsg] = useState("")
     const [successMsg, setSuccessMsg] = useState("")
 
-    // OTP COUNTDOWN TIMER: Counts down from 600 seconds (10 minutes).
-    // Shows the user how much time they have before the OTP expires.
-    const [otpCountdown, setOtpCountdown] = useState(0)
-    const countdownRef = useRef(null)
-
-    // RESEND COOLDOWN: Prevents OTP spam. User must wait 30 seconds before resending.
-    const [resendCooldown, setResendCooldown] = useState(0)
-    const resendRef = useRef(null)
-
     // Validation states
     const [emailValid, setEmailValid] = useState(null)
     const [emailTouched, setEmailTouched] = useState(false)
     const [passwordMatch, setPasswordMatch] = useState(null)
     const [confirmTouched, setConfirmTouched] = useState(false)
-
-    // COUNTDOWN EFFECT: Decrements every second when active.
-    // Clears the interval when it reaches 0 or when the component unmounts.
-    useEffect(() => {
-        if (otpCountdown > 0) {
-            countdownRef.current = setInterval(() => {
-                setOtpCountdown(prev => {
-                    if (prev <= 1) {
-                        clearInterval(countdownRef.current)
-                        return 0
-                    }
-                    return prev - 1
-                })
-            }, 1000)
-        }
-        return () => clearInterval(countdownRef.current)
-    }, [otpCountdown])
-
-    // RESEND COOLDOWN EFFECT: Same pattern as OTP countdown but for the 30s resend timer.
-    useEffect(() => {
-        if (resendCooldown > 0) {
-            resendRef.current = setInterval(() => {
-                setResendCooldown(prev => {
-                    if (prev <= 1) {
-                        clearInterval(resendRef.current)
-                        return 0
-                    }
-                    return prev - 1
-                })
-            }, 1000)
-        }
-        return () => clearInterval(resendRef.current)
-    }, [resendCooldown])
-
-    // Helper: Format seconds into MM:SS display (e.g., 9:45)
-    const formatTime = (seconds) => {
-        const m = Math.floor(seconds / 60)
-        const s = seconds % 60
-        return `${m}:${s.toString().padStart(2, '0')}`
-    }
 
     const handleEmailChange = (e) => {
         const value = e.target.value;
@@ -121,10 +63,8 @@ const ForgotPassword = () => {
         }
     }
 
-    // ─── STEP 1: SEND OTP ─────────────────────────────────────────────
-    // Calls the backend to generate an OTP and email it to the user.
-    // On success, advances to Step 2 and starts the countdown timer.
-    const handleSendOtp = async (e) => {
+    // ─── STEP 1: FETCH QUESTION ─────────────────────────────────────────────
+    const handleFetchQuestion = async (e) => {
         e.preventDefault()
         setErrorMsg("")
         setSuccessMsg("")
@@ -136,68 +76,41 @@ const ForgotPassword = () => {
 
         setLoading(true)
         try {
-            const data = await forgotPassword(email)
-            setSuccessMsg(data.message || "OTP sent to your email!")
-            setStep(2) // Advance to OTP entry step
-            setOtpCountdown(600) // Start 10-minute countdown
-            setResendCooldown(30) // Prevent immediate resend (30s cooldown)
+            const data = await getSecurityQuestion(email)
+            setSecurityQuestion(data.securityQuestion)
+            setStep(2) 
         } catch (error) {
-            setErrorMsg(typeof error === 'string' ? error : 'Failed to send OTP. Please try again.')
+            setErrorMsg(typeof error === 'string' ? error : 'Failed to retrieve security question.')
         } finally {
             setLoading(false)
         }
     }
 
-    // RESEND OTP: Same as handleSendOtp but doesn't change the step.
-    // Only available after the 30-second cooldown expires.
-    const handleResendOtp = async () => {
-        if (resendCooldown > 0) return // Still in cooldown period
-        setErrorMsg("")
-        setSuccessMsg("")
-        setLoading(true)
-        try {
-            const data = await forgotPassword(email)
-            setSuccessMsg("New OTP sent to your email!")
-            setOtp("") // Clear any previously entered OTP
-            setOtpCountdown(600) // Reset the countdown
-            setResendCooldown(30) // Reset the resend cooldown
-        } catch (error) {
-            setErrorMsg(typeof error === 'string' ? error : 'Failed to resend OTP.')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    // ─── STEP 2: VERIFY OTP ───────────────────────────────────────────
-    // Sends the user-entered OTP to the backend for verification.
-    // On success, receives a short-lived reset token and advances to Step 3.
-    const handleVerifyOtp = async (e) => {
+    // ─── STEP 2: VERIFY ANSWER ───────────────────────────────────────────
+    const handleVerifyAnswer = async (e) => {
         e.preventDefault()
         setErrorMsg("")
         setSuccessMsg("")
 
-        if (!otp || otp.length !== 6) {
-            setErrorMsg("Please enter the 6-digit OTP from your email")
+        if (!securityAnswer.trim()) {
+            setErrorMsg("Please enter your security answer")
             return
         }
 
         setLoading(true)
         try {
-            const data = await verifyOtp(email, otp)
+            const data = await verifySecurityAnswer(email, securityAnswer)
             setResetToken(data.resetToken) // Store the reset token for Step 3
-            setSuccessMsg("OTP verified! Set your new password.")
-            setStep(3) // Advance to password reset step
-            clearInterval(countdownRef.current) // Stop the OTP countdown (no longer relevant)
+            setSuccessMsg("Answer verified! Set your new password.")
+            setStep(3) 
         } catch (error) {
-            setErrorMsg(typeof error === 'string' ? error : 'OTP verification failed.')
+            setErrorMsg(typeof error === 'string' ? error : 'Verification failed.')
         } finally {
             setLoading(false)
         }
     }
 
     // ─── STEP 3: RESET PASSWORD ───────────────────────────────────────
-    // Uses the reset token from Step 2 to authorize setting a new password.
-    // On success, redirects to the login page.
     const handleResetPassword = async (e) => {
         e.preventDefault()
         setErrorMsg("")
@@ -217,7 +130,6 @@ const ForgotPassword = () => {
         try {
             const data = await resetPassword(resetToken, newPassword)
             setSuccessMsg(data.message || "Password reset successfully!")
-            // Redirect to login after a short delay so user sees the success message
             setTimeout(() => navigate("/login"), 2000)
         } catch (error) {
             setErrorMsg(typeof error === 'string' ? error : 'Password reset failed.')
@@ -228,7 +140,6 @@ const ForgotPassword = () => {
 
     return (
         <>
-            {/* Loading overlay — same style as Login page for consistency */}
             {loading && (
                 <div className="pdf-overlay loading-screen">
                     <div className="pdf-overlay-card loader-card">
@@ -245,8 +156,8 @@ const ForgotPassword = () => {
                                 </defs>
                             </svg>
                         </div>
-                        <h2>{step === 1 ? 'Sending OTP' : step === 2 ? 'Verifying' : 'Resetting'}</h2>
-                        <p>{step === 1 ? 'Dispatching secure code...' : step === 2 ? 'Validating your identity...' : 'Updating credentials...'}</p>
+                        <h2>{step === 1 ? 'Searching...' : step === 2 ? 'Verifying' : 'Resetting'}</h2>
+                        <p>{step === 1 ? 'Locating secure file...' : step === 2 ? 'Validating your identity...' : 'Updating credentials...'}</p>
                     </div>
                 </div>
             )}
@@ -266,12 +177,11 @@ const ForgotPassword = () => {
                     <header className="login-header">
                         <h1>Password Recovery 🔓</h1>
                         <p className="login-subtitle">
-                            {step === 1 && "Enter your registered email to receive a secure OTP code. 📧"}
-                            {step === 2 && "Check your inbox and enter the 6-digit code we just sent. 🔢"}
+                            {step === 1 && "Enter your registered email to locate your security file. 📧"}
+                            {step === 2 && "Answer your security question to prove your identity. 🔐"}
                             {step === 3 && "Almost there! Set your new password below. 🛡️"}
                         </p>
 
-                        {/* STEP INDICATOR: Visual dots showing progress through the 3-step flow */}
                         <div className="step-indicator">
                             <div className={`step-dot ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
                                 <span>1</span>
@@ -290,7 +200,6 @@ const ForgotPassword = () => {
                         </div>
                     </header>
 
-                    {/* Messages */}
                     {errorMsg && (
                         <div className="form-error fp-message" style={{ marginBottom: '1.25rem' }}>
                             <span>⚠️</span>
@@ -304,9 +213,8 @@ const ForgotPassword = () => {
                         </div>
                     )}
 
-                    {/* ─── STEP 1: EMAIL INPUT ──────────────────────────────────── */}
                     {step === 1 && (
-                        <form className="login-form" onSubmit={handleSendOtp}>
+                        <form className="login-form" onSubmit={handleFetchQuestion}>
                             <label htmlFor="fp-email">Registered Email</label>
                             <div className="input-with-indicator">
                                 <input
@@ -330,68 +238,43 @@ const ForgotPassword = () => {
                             )}
 
                             <button type="submit" className="login-button" disabled={!emailValid}>
-                                <span>Send OTP 📨</span>
+                                <span>Find Account 🔎</span>
                             </button>
                         </form>
                     )}
 
-                    {/* ─── STEP 2: OTP INPUT ────────────────────────────────────── */}
                     {step === 2 && (
-                        <form className="login-form" onSubmit={handleVerifyOtp}>
-                            {/* COUNTDOWN TIMER: Shows remaining time before OTP expires */}
-                            {otpCountdown > 0 && (
-                                <div className="otp-countdown">
-                                    <span className="countdown-icon">⏱️</span>
-                                    <span className="countdown-text">
-                                        OTP expires in <strong>{formatTime(otpCountdown)}</strong>
-                                    </span>
-                                </div>
-                            )}
-                            {otpCountdown === 0 && step === 2 && (
-                                <div className="otp-countdown expired">
-                                    <span className="countdown-icon">❌</span>
-                                    <span className="countdown-text">OTP has expired. Please resend.</span>
-                                </div>
-                            )}
+                        <form className="login-form" onSubmit={handleVerifyAnswer}>
+                            <label style={{color: '#f0a040', marginBottom: '0.5rem'}}>Security Question:</label>
+                            <div style={{
+                                padding: '15px', 
+                                backgroundColor: 'rgba(212, 130, 26, 0.08)', 
+                                border: '1px solid rgba(212, 130, 26, 0.25)', 
+                                borderRadius: '8px', 
+                                marginBottom: '1.5rem',
+                                color: '#e8e2d4',
+                                fontWeight: '500'
+                            }}>
+                                "{securityQuestion}"
+                            </div>
 
-                            <label htmlFor="fp-otp">Enter 6-Digit OTP</label>
+                            <label htmlFor="fp-answer">Your Answer</label>
                             <input
-                                id="fp-otp"
-                                name="otp"
+                                id="fp-answer"
+                                name="securityAnswer"
                                 type="text"
-                                placeholder="• • • • • •"
+                                placeholder="Enter your answer"
                                 required
-                                value={otp}
-                                onChange={(e) => {
-                                    // OTP INPUT FILTER: Only allow digits, max 6 characters.
-                                    // Strips any non-numeric characters automatically.
-                                    const val = e.target.value.replace(/\D/g, '').slice(0, 6)
-                                    setOtp(val)
-                                }}
-                                maxLength={6}
-                                className="otp-input-field"
-                                style={{ letterSpacing: '0.5em', textAlign: 'center', fontSize: '1.3rem', fontFamily: 'var(--font-mono)' }}
+                                value={securityAnswer}
+                                onChange={(e) => setSecurityAnswer(e.target.value)}
                             />
 
-                            <button type="submit" className="login-button" disabled={otp.length !== 6 || otpCountdown === 0}>
-                                <span>Verify OTP ✓</span>
+                            <button type="submit" className="login-button" disabled={!securityAnswer.trim()}>
+                                <span>Verify Answer ✓</span>
                             </button>
-
-                            {/* RESEND OTP LINK: Available after 30-second cooldown */}
-                            <p className="resend-otp-text">
-                                Didn't receive the code?{' '}
-                                {resendCooldown > 0 ? (
-                                    <span className="resend-cooldown">Resend in {resendCooldown}s</span>
-                                ) : (
-                                    <button type="button" className="resend-otp-btn" onClick={handleResendOtp}>
-                                        Resend OTP
-                                    </button>
-                                )}
-                            </p>
                         </form>
                     )}
 
-                    {/* ─── STEP 3: NEW PASSWORD ─────────────────────────────────── */}
                     {step === 3 && (
                         <form className="login-form" onSubmit={handleResetPassword}>
                             <label htmlFor="fp-new-password">New Password</label>
@@ -435,7 +318,7 @@ const ForgotPassword = () => {
                         </form>
                     )}
 
-                    <p>Remember your password? <Link to="/login">Back to login</Link> 🔙</p>
+                    <p style={{marginTop: '2rem'}}>Remember your password? <Link to="/login">Back to login</Link> 🔙</p>
                 </section>
             </main>
         </>
